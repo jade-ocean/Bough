@@ -92,7 +92,7 @@ xcodebuild test -project Bough.xcodeproj -scheme Bough -destination 'platform=ma
 | 标记解决 | `git add -- <path>`（回写内容由逐块选择重建，ours/theirs/both） | 外部解决的文件提供「标记为已解决」直通 |
 | Stash | `git stash list --pretty=format:%gd%x1f%H%x1f%at%x1f%gs%x1e`、`stash push [-u] -m`、`apply --index` / `pop` / `drop`、`stash show -U3` | reflog 选择器 `stash@{N}` 贯穿操作；patch 复用 DiffParser 渲染 |
 | Tag | `for-each-ref refs/tags`（objecttype 区分轻量/附注）、`tag <n>`、`tag -a -m`、`tag -d`、`push <remote> <tag>`、`push <remote> :refs/tags/<n>` | 附注标签 sha 指向 tag 对象 |
-| 交互式 rebase | `git rebase -i <base>` + `GIT_SEQUENCE_EDITOR="cp '<临时todo>'"` | Bough 生成 todo（pick/drop/顺序），经临时文件注入，不弹编辑器；支持 keep/drop/重排序（reword 留后续） |
+| 交互式 rebase | `git rebase -i <base>` + `GIT_SEQUENCE_EDITOR="cp '<临时todo>'"` | Bough 生成 todo（pick/drop/顺序），经临时文件注入，不弹编辑器；支持 keep/drop/重排序/reword（消息经 GIT_EDITOR 队列注入） |
 
 ## Git 命令与解析（阶段 6）
 
@@ -189,6 +189,14 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
 - [x] 真分层图标源：`Scripts/make_appicon_layers.swift` 产出 background/foreground/foreground-mono
       三个 SVG 图层（与主图标同坐标系），Icon Composer 导入即可生成 `.icon`
 - [ ] appcast 托管上线：dist 包已就绪（`build/dist/`：DMG + appcast.xml + UPLOAD.md 托管说明），
+      待确定托管地址后改 SUFeedURL 重出包
+- [ ] 真分层 Liquid Glass 图标：三图层 SVG 已就绪（`build/icon-layers/`），待 Icon Composer 手工组装
+
+### 下一迭代候选（reword 已于体验包交付，划掉）
+
+- [ ] blame 视图（选中文件 → 逐行作者/提交，`git blame --porcelain` 解析）
+- [ ] 文件树浏览（任意提交的工作树快照浏览 + 文件内容查看）
+- [ ] XCUITest 冒烟（打开仓库 → stage → 提交 → 切分支 → diff 关键路径自动化）（`build/dist/`：DMG + appcast.xml + UPLOAD.md 托管说明），
       待确定托管地址后改 SUFeedURL 重出包
 
 ## 应用图标
