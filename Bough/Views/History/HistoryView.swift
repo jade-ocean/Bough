@@ -11,6 +11,7 @@ struct HistoryView: View {
     @State private var resetTarget: Commit?
     @State private var tagTarget: Commit?
     @State private var rebaseTarget: Commit?
+    @State private var showsReflog = false
 
     init(model: WorkspaceModel) {
         self.model = model
@@ -40,6 +41,9 @@ struct HistoryView: View {
         }
         .sheet(item: $rebaseTarget) { commit in
             InteractiveRebaseSheet(model: model, base: commit) { rebaseTarget = nil }
+        }
+        .sheet(isPresented: $showsReflog) {
+            ReflogSheet(model: model) { showsReflog = false }
         }
     }
 
@@ -171,6 +175,12 @@ struct HistoryView: View {
             .frame(width: 150)
             Toggle("图形", isOn: $showsGraph)
                 .help("显示 / 隐藏提交图")
+            Button {
+                showsReflog = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+            }
+            .help("Reflog：找回被重置/变基丢弃的提交")
             Button {
                 Task { await history.reload() }
             } label: {

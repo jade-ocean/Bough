@@ -61,6 +61,26 @@ struct SidebarView: View {
             sheetView(target)
         }
         .confirmationDialog(
+            "检出「\(model.pendingCheckout?.name ?? "")」前如何处理未提交更改？",
+            isPresented: Binding(
+                get: { model.pendingCheckout != nil },
+                set: { if !$0 { model.pendingCheckout = nil } }),
+            titleVisibility: .visible) {
+            Button("先自动 Stash，检出后恢复（推荐）") {
+                if let target = model.pendingCheckout {
+                    Task { await model.checkoutWithStash(target) }
+                }
+            }
+            Button("直接检出（不处理更改）") {
+                if let target = model.pendingCheckout {
+                    Task { await model.checkout(target) }
+                }
+            }
+            Button("取消", role: .cancel) { model.pendingCheckout = nil }
+        } message: {
+            Text("工作区有未提交更改；目标分支会覆盖其中部分文件。")
+        }
+        .confirmationDialog(
             "删除分支「\(deleteTarget?.name ?? "")」？",
             isPresented: Binding(get: { deleteTarget != nil },
                                  set: { if !$0 { deleteTarget = nil } }),
@@ -164,7 +184,7 @@ struct SidebarView: View {
     private func branchMenu(_ branch: Branch) -> some View {
         if !branch.isCurrent {
             Button("检出") {
-                Task { await model.checkout(branch) }
+                Task { await model.requestCheckout(branch) }
             }
         }
         Button("合并到当前分支") {

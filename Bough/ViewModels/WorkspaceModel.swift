@@ -17,6 +17,8 @@ final class WorkspaceModel: ObservableObject {
 
     /// Pending discard request awaiting user confirmation (drives the sheet).
     @Published var pendingDiscard: [StatusEntry] = []
+    /// Branch checkout paused for the dirty-tree confirmation dialog.
+    @Published var pendingCheckout: Branch?
 
     let repository: GitRepository
     let history: HistoryModel
@@ -45,6 +47,7 @@ final class WorkspaceModel: ObservableObject {
         self.tags = TagModel(repository: repository)
         self.conflict = ConflictModel(repository: repository, accessProvider: accessProvider)
         self.search = SearchModel(repository: repository)
+        detail.parentWorkspace = self
     }
 
     var canCommit: Bool {
@@ -181,6 +184,28 @@ final class WorkspaceModel: ObservableObject {
         await mutate(reloadsHistory: true) { try await $0.checkoutBranch(branch.name) }
     }
 
+    /// Dirty tree -> ask via confirmation dialog; clean -> switch directly.
+    func requestCheckout(_ branch: Branch) async {
+        if status.hasChanges {
+            pendingCheckout = branch
+        } else {
+            await checkout(branch)
+        }
+    }
+
+    /// Dialog action: auto-stash, switch, restore; retained stash reported.
+    func checkoutWithStash(_ branch: Branch) async {
+        pendingCheckout = nil
+        var outcome: GitRepository.CheckoutOutcome?
+        await mutate(reloadsHistory: true) {
+            outcome = try await $0.checkoutBranchPreservingChanges(
+                branch.name, autoStashMessage: "Bough: 检出 \(branch.name) 前自动暂存")
+        }
+        if outcome == .switchedWithRetainedStash {
+            banner = .info("已检出「\(branch.name)」；更改已尽量恢复，stash@{0} 保留待确认（有冲突时用侧栏 Stash 处理）")
+        }
+    }
+
     /// DWIM checkout of a remote branch: git creates a local tracking branch
     /// automatically when the name is unambiguous.
     func checkoutRemote(named shortName: String) async {
@@ -227,6 +252,24 @@ final class WorkspaceModel: ObservableObject {
 
     func removeRemote(_ remote: RemoteInfo) async {
         await mutate { try await $0.removeRemote(name: remote.name) }
+    }
+
+    // MARK: - Reflog recovery (working-copy pack)
+
+    func checkoutDetached(_ entry: ReflogEntry) async {
+        await mutate(reloadsHistory: true) { try await $0.checkoutCommit(sha: entry.sha) }
+    }
+
+    func branchFromReflog(_ entry: ReflogEntry, name: String) async {
+        guard await repository.isBranchNameValid(name) else {
+            banner = .error("分支名不合法：\(name)")
+            return
+        }
+        await mutate { try await $0.createBranch(at: entry.sha, name: name) }
+    }
+
+    func resetTo(sha: String, mode: GitRepository.ResetMode) async {
+        await mutate(reloadsHistory: true) { try await $0.reset(sha: sha, mode: mode) }
     }
 
     // MARK: - Stash (Phase 5)

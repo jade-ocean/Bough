@@ -43,8 +43,14 @@ extension GitRepository {
         _ = try await runOrThrow(args)
     }
 
-    func stashApply(_ selector: String) async throws {
-        _ = try await runOrThrow(["stash", "apply", "--index", selector])
+    /// - Parameter restoreIndex: `--index` restores staged/unstaged split but
+    ///   refuses when the index state doesn't match HEAD (auto-stash flows
+    ///   should pass false - they only need the worktree content back).
+    func stashApply(_ selector: String, restoreIndex: Bool = true) async throws {
+        var args = ["stash", "apply"]
+        if restoreIndex { args.append("--index") }
+        args.append(selector)
+        _ = try await runOrThrow(args)
     }
 
     func stashPop(_ selector: String) async throws {

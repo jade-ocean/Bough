@@ -5,14 +5,16 @@ struct DiffTextView: View {
     let file: DiffFile
     let fileName: String
     let showsSideBySide: Bool
+    /// When present, hunk headers show selection checkboxes (partial staging).
+    var hunkSelection: Binding<Set<Int>>? = nil
 
     var body: some View {
         ScrollView([.vertical, .horizontal]) {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if showsSideBySide {
-                    SideBySideBody(file: file, fileName: fileName)
+                    SideBySideBody(file: file, fileName: fileName, hunkSelection: hunkSelection)
                 } else {
-                    InlineBody(file: file, fileName: fileName)
+                    InlineBody(file: file, fileName: fileName, hunkSelection: hunkSelection)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -21,33 +23,54 @@ struct DiffTextView: View {
     }
 }
 
+/// Hunk header bar with optional selection checkbox.
+struct HunkHeaderBar: View {
+    let hunk: DiffHunk
+    let index: Int
+    let selection: Binding<Set<Int>>?
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let selection {
+                let picked = selection.wrappedValue.contains(index)
+                Button {
+                    if picked { selection.wrappedValue.remove(index) }
+                    else { selection.wrappedValue.insert(index) }
+                } label: {
+                    Image(systemName: picked ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(picked ? Color.accentColor : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("选择此 hunk 进行部分暂存")
+            }
+            Text("@@ -\(hunk.oldStart),\(hunk.oldCount) +\(hunk.newStart),\(hunk.newCount) @@ \(hunk.section)")
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 11, design: .monospaced))
+        .foregroundStyle(.tertiary)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .separatorColor).opacity(0.25))
+    }
+}
+
 // MARK: - Inline body
 
 private struct InlineBody: View {
     let file: DiffFile
     let fileName: String
+    let hunkSelection: Binding<Set<Int>>?
 
     var body: some View {
         let tracker = HighlightTracker(language: SyntaxLanguage.detect(fileName: fileName))
-        ForEach(Array(file.hunks.enumerated()), id: \.offset) { _, hunk in
-            HunkHeader(hunk: hunk)
+        ForEach(Array(file.hunks.enumerated()), id: \.offset) { index, hunk in
+            HunkHeaderBar(hunk: hunk, index: index, selection: hunkSelection)
             ForEach(Array(hunk.lines.enumerated()), id: \.offset) { _, line in
                 InlineRow(line: line, tracker: tracker)
             }
         }
-    }
-}
-
-private struct HunkHeader: View {
-    let hunk: DiffHunk
-
-    var body: some View {
-        Text("@@ -\(hunk.oldStart),\(hunk.oldCount) +\(hunk.newStart),\(hunk.newCount) @@ \(hunk.section)")
-            .font(.system(size: 11, design: .monospaced))
-            .foregroundStyle(.tertiary)
-            .padding(.vertical, 2)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .separatorColor).opacity(0.25))
     }
 }
 
@@ -94,10 +117,12 @@ private struct GutterCell: View {
 private struct SideBySideBody: View {
     let file: DiffFile
     let fileName: String
+    let hunkSelection: Binding<Set<Int>>?
 
     var body: some View {
         let tracker = HighlightTracker(language: SyntaxLanguage.detect(fileName: fileName))
-        ForEach(Array(file.hunks.enumerated()), id: \.offset) { _, hunk in
+        ForEach(Array(file.hunks.enumerated()), id: \.offset) { index, hunk in
+            HunkHeaderBar(hunk: hunk, index: index, selection: hunkSelection)
             HStack(spacing: 0) {
                 columnCaption("旧")
                 Divider()

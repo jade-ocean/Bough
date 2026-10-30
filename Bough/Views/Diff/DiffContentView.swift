@@ -6,6 +6,11 @@ struct DiffContentView: View {
     let rendered: DetailModel.RenderedDiff?
     @Binding var showsSideBySide: Bool
     let isLoading: Bool
+    /// Partial-staging action (worktree mode only): title nil hides the button.
+    var hunkActionTitle: String? = nil
+    var hunkActionEnabled: Bool = false
+    var onHunkAction: (() -> Void)? = nil
+    var hunkSelection: Binding<Set<Int>>? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -36,6 +41,11 @@ struct DiffContentView: View {
                 .truncationMode(.middle)
                 .help(rendered?.fileChange?.displayPath ?? "")
             Spacer()
+            if let hunkActionTitle, let onHunkAction {
+                Button(hunkActionTitle) { onHunkAction() }
+                    .controlSize(.small)
+                    .disabled(!hunkActionEnabled)
+            }
             Picker("模式", selection: $showsSideBySide) {
                 Text("内联").tag(false)
                 Text("并排").tag(true)
@@ -61,7 +71,8 @@ struct DiffContentView: View {
         } else if let diff = rendered.diff {
             DiffTextView(file: diff,
                          fileName: rendered.fileChange?.path ?? "",
-                         showsSideBySide: showsSideBySide)
+                         showsSideBySide: showsSideBySide,
+                         hunkSelection: hunkSelection)
         } else {
             EmptyStateView(icon: "equal.circle",
                            title: "无差异",

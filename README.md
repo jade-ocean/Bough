@@ -101,6 +101,11 @@ xcodebuild test -project Bough.xcodeproj -scheme Bough -destination 'platform=ma
 | 代码搜索 | `git grep -n --column -I [-i] [-E\|-F] <pattern> [-- path]` | `file:line:column:text` 冒号分列；退出码 1 = 无匹配（非错误）；500 条截断 |
 | 提交检索 | `git log --all -n 100 -i --grep <text> --pretty=<历史格式>` | 复用 GitLogParser.parseHistory；结果可跳转到历史选中 |
 
+| Hunk stage | `git apply --cached --whitespace=nowarn [--reverse]`（stdin patch，DiffParser 重组选中 hunk） | 仅动 index；反向用于部分撤销暂存 |
+| Reflog | `git reflog -n 200 --pretty=%H%x1f%h%x1f%at%x1f%gD%x1f%gs` | `HEAD@{n}` 选择器贯穿找回操作 |
+| 检出保护 | 失败匹配 `would be overwritten`/`Please commit` → `stash push -u` → checkout → `stash apply`（非 --index） | apply 冲突/modify-delete 时 stash 保留，内容已尽量恢复 |
+| 找回建分支 | `git branch <name> <sha>` | sha 来自 reflog 条目 |
+
 ## 快捷键
 
 | 快捷键 | 动作 |
@@ -147,6 +152,18 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
 
 **Info.plist 待办**：把 `SUFeedURL` 换成你的实际 appcast 地址；公证分发前在
 `Configs/Signing.xcconfig` 取消 `DEVELOPMENT_TEAM` 注释（release.sh 也可用环境变量注入）。
+
+## 工作区体验包（0.2 迭代）
+
+- [x] **Hunk 级 stage**（P0 #2 收官）：工作区 diff 的 hunk 头部勾选框，
+      模式栏「暂存所选 Hunk / 从暂存区撤销所选 Hunk」；底层
+      `git apply --cached [--reverse] --whitespace=nowarn`，patch 由
+      DiffParser 按选中块重组（header 保留、升序）
+- [x] **Reflog 找回**：历史工具栏时钟按钮 → Reflog 面板（HEAD@{n} 操作流），
+      右键检出（detached）/ 从此提交新建分支 / 重置当前分支到此处
+- [x] **检出保护**：工作区有未提交更改时检出分支弹三选确认
+      （自动 Stash 并恢复 / 直接检出 / 取消）；恢复冲突时诚实保留
+      stash@{0} 并以横幅提示（与 git 手动流程语义一致）
 
 ## Roadmap（后续方向）
 

@@ -26,15 +26,20 @@ struct GitRepository: Sendable {
     /// Internal so the +History extension (separate file) can reuse the executor.
     @discardableResult
     func run(_ arguments: [String], timeout: TimeInterval = 30,
-             extraEnvironment: [String: String] = [:]) async throws -> GitResult {
+             extraEnvironment: [String: String] = [:],
+             stdinData: Data? = nil) async throws -> GitResult {
         try await executor.run(GitCommand(arguments, timeout: timeout,
+                                          stdinData: stdinData,
                                           extraEnvironment: extraEnvironment))
     }
 
     /// Fail with a typed error when git exits non-zero.
     func runOrThrow(_ arguments: [String], timeout: TimeInterval = 30,
-                    extraEnvironment: [String: String] = [:]) async throws -> GitResult {
-        let result = try await run(arguments, timeout: timeout, extraEnvironment: extraEnvironment)
+                    extraEnvironment: [String: String] = [:],
+                    stdinData: Data? = nil) async throws -> GitResult {
+        let result = try await run(arguments, timeout: timeout,
+                                   extraEnvironment: extraEnvironment,
+                                   stdinData: stdinData)
         guard result.succeeded else {
             throw GitError.executionFailed(
                 command: arguments.joined(separator: " "),

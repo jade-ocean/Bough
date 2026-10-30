@@ -120,6 +120,36 @@ enum DiffParser {
         return (oldStart, oldCount, newStart, newCount, rest)
     }
 
+    // MARK: - Hunk selection (partial staging)
+
+    /// Rebuild a patch containing only the selected hunks (header preserved,
+    /// hunks in ascending order). Returns nil for invalid/empty selections.
+    static func patch(fromDiff diff: String, selecting hunkIndices: [Int]) -> String? {
+        let lines = diff.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard let firstHunk = lines.firstIndex(where: { $0.hasPrefix("@@") }) else { return nil }
+        let header = lines[0..<firstHunk].filter { !$0.isEmpty }
+
+        var blocks: [[String]] = []
+        var current: [String]?
+        for line in lines[firstHunk...] {
+            if line.hasPrefix("@@") {
+                if let closed = current { blocks.append(closed) }
+                current = [line]
+            } else if current != nil {
+                current?.append(line)
+            }
+        }
+        if let open = current { blocks.append(open) }
+
+        let wanted = Set(hunkIndices)
+        guard !wanted.isEmpty, wanted.isSubset(of: 0..<blocks.count) else { return nil }
+        var out = header
+        for index in hunkIndices.sorted() {
+            out.append(contentsOf: blocks[index])
+        }
+        return out.joined(separator: "\n") + "\n"
+    }
+
     // MARK: - Side-by-side pairing
 
     struct SidePair: Equatable, Sendable {

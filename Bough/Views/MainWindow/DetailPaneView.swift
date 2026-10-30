@@ -52,8 +52,29 @@ struct DetailPaneView: View {
             }
             DiffContentView(rendered: model.detail.rendered,
                             showsSideBySide: sideBySideBinding,
-                            isLoading: false)
+                            isLoading: false,
+                            hunkActionTitle: hunkActionTitle,
+                            hunkActionEnabled: !model.detail.selectedHunks.isEmpty,
+                            onHunkAction: {
+                                Task { await model.detail.applySelectedHunks(stage: hunkActionStages) }
+                            },
+                            hunkSelection: Binding(
+                                get: { model.detail.selectedHunks },
+                                set: { model.detail.selectedHunks = $0 }))
         }
+    }
+
+    /// nil = hunk actions hidden (not a worktree diff).
+    private var hunkActionTitle: String? {
+        guard case .worktreeFile(_, let staged, _) = model.detail.selection else { return nil }
+        let count = model.detail.selectedHunks.count
+        let verb = staged ? "从暂存区撤销所选 Hunk（\(count)）" : "暂存所选 Hunk（\(count)）"
+        return count == 0 ? (staged ? "从暂存区撤销所选 Hunk" : "暂存所选 Hunk") : verb
+    }
+
+    private var hunkActionStages: Bool {
+        guard case .worktreeFile(_, let staged, _) = model.detail.selection else { return true }
+        return !staged
     }
 
     private var sideBySideBinding: Binding<Bool> {

@@ -19,6 +19,8 @@ final class DetailModel: ObservableObject {
         let oldImage: NSImage?
         let newImage: NSImage?
         let truncated: Bool
+        /// Raw unified diff text (hunk selection for partial staging).
+        var rawDiffText: String = ""
     }
 
     @Published var selection: Selection?
@@ -26,6 +28,10 @@ final class DetailModel: ObservableObject {
     @Published private(set) var rendered: RenderedDiff?
     @Published var selectedFile: FileChange?
     @Published var showsSideBySide = false
+    /// Hunk checkboxes in worktree diff mode (indices into DiffFile.hunks).
+    @Published var selectedHunks: Set<Int> = []
+    /// Weak back-reference for status refresh after partial staging.
+    weak var parentWorkspace: WorkspaceModel?
 
     /// Detail header info when a commit is selected.
     @Published private(set) var headerCommit: Commit?
@@ -45,6 +51,7 @@ final class DetailModel: ObservableObject {
         files = []
         rendered = nil
         headerCommit = nil
+        selectedHunks = []
         Task { await load() }
     }
 
@@ -80,6 +87,7 @@ final class DetailModel: ObservableObject {
     /// Select a file inside the commit (or the single worktree file) and render its diff.
     func selectFile(_ file: FileChange) {
         selectedFile = file
+        selectedHunks = []
         Task { await renderFile(file) }
     }
 
@@ -143,11 +151,32 @@ final class DetailModel: ObservableObject {
                                     diff: parsed,
                                     oldImage: oldData.flatMap { NSImage(data: $0) },
                                     newImage: newData.flatMap { NSImage(data: $0) },
-                                    truncated: truncated)
+                                    truncated: truncated,
+                                    rawDiffText: text)
             return
         }
         rendered = RenderedDiff(fileChange: file, diff: parsed,
-                                oldImage: nil, newImage: nil, truncated: truncated)
+                                oldImage: nil, newImage: nil, truncated: truncated,
+                                rawDiffText: text)
+    }
+
+    /// Partial staging from hunk checkboxes (worktree mode only):
+    /// stage = apply unstaged diff hunks to index; unstage = reverse-apply.
+    func applySelectedHunks(stage: Bool) async {
+        guard case .worktreeFile(let path, let staged, _) = selection,
+              let rendered, !selectedHunks.isEmpty else { return }
+        guard stage != staged else { return } // direction must match current side
+        guard let patch = DiffParser.patch(fromDiff: rendered.rawDiffText,
+                                           selecting: Array(selectedHunks)) else { return }
+        do {
+            try await repository.applyPatch(Data(patch.utf8), reverse: !stage)
+            selectedHunks = []
+            await parentWorkspace?.refresh()
+            await load()
+        } catch {
+            parentWorkspace?.banner = .error(error.localizedDescription)
+            Log.git.error("hunk apply failed: \(String(describing: error), privacy: .public)")
+        }
     }
 
     /// Rename-aware blob path: the versioned name at that ref.
