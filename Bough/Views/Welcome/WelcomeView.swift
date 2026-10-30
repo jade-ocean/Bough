@@ -52,9 +52,9 @@ struct WelcomeView: View {
                 }
                 .keyboardShortcut("o")
                 Button("克隆远程仓库…") {
+                    viewModel.pendingSheet = .clone
                 }
-                .disabled(true)
-                .help("Git 引擎接入后提供（阶段 2）")
+                .disabled(viewModel.isProcessing)
             }
         }
         .frame(width: 300)

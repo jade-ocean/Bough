@@ -50,6 +50,7 @@
 		75DB1AB2AA9C5B49EA983FA2 /* SecurityScopedAccessProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19767D879ACECA4603F08DAD /* SecurityScopedAccessProvider.swift */; };
 		78D7C61F0160FFC86606BC30 /* GitPhase5IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E0317FC7DCAFB943BC5F62D /* GitPhase5IntegrationTests.swift */; };
 		7D7C1113EF63D43B14E38CE4 /* DetailPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8641E97F516FCD8DC1E8941E /* DetailPaneView.swift */; };
+		81FC6D73AFCBD3120B16BB6D /* GitCloneIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D995D060FA2F79F78E7D59 /* GitCloneIntegrationTests.swift */; };
 		84D3F39841739D73BD9EC97D /* GitSearchIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39681A424242367FF1A58D48 /* GitSearchIntegrationTests.swift */; };
 		8810F8ED9442176763858C40 /* BranchSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = C914DDA29317D10BADFBB3CA /* BranchSheets.swift */; };
 		8BD12CA8A348631D52170382 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F05569BAE953C01B294517DB /* WelcomeView.swift */; };
@@ -85,7 +86,9 @@
 		E72A55BA42F88BD9811E5A17 /* GitRepository+Tags.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB374AFA21FEDABBB033A5C8 /* GitRepository+Tags.swift */; };
 		E7580A7831D6CD855D4624D8 /* GitError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8423A4FD9528433659727E2F /* GitError.swift */; };
 		E830FDB8128DB09EBDD82523 /* StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37B728D7486F87F821011980 /* StatusBarView.swift */; };
+		E9DEB746DC2E863F60F093F7 /* CloneService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 811ED770431D8C229577D7FE /* CloneService.swift */; };
 		EDF4F3F31447671709489D7D /* RepositoryLocator.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC1031024830E81382CA3969 /* RepositoryLocator.swift */; };
+		EF16FA02EDABE5078705753D /* CloneRemoteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24C021F72A4BE72E971E92C0 /* CloneRemoteSheet.swift */; };
 		F22BB944BFC9CADE4B3AB098 /* DiffTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C49DF670FB70879F4C7772 /* DiffTextView.swift */; };
 		F647EA176C9A8C95AA6A0AA8 /* SyntaxHighlighterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1326CB402A02C3EE2CCF46C /* SyntaxHighlighterTests.swift */; };
 		FE7298030333C3A5E4000C17 /* FileChange.swift in Sources */ = {isa = PBXBuildFile; fileRef = 738657D7C6405A53CCEAFD13 /* FileChange.swift */; };
@@ -114,6 +117,7 @@
 		2197B34DCBD954443F1BAAD6 /* BannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BannerView.swift; sourceTree = "<group>"; };
 		22646AADC9163476DCD9BD27 /* ChangesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangesView.swift; sourceTree = "<group>"; };
 		2341F1CEE96364FFEA7E760B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		24C021F72A4BE72E971E92C0 /* CloneRemoteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloneRemoteSheet.swift; sourceTree = "<group>"; };
 		27BB966C54E496E85D5738F1 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		2C0A00AE6C3F9E72A716CD62 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		3461EBD448154F552D653CF8 /* RepositoryRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryRecord.swift; sourceTree = "<group>"; };
@@ -129,6 +133,7 @@
 		4D6A396C966811762767FC99 /* WorkspaceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceModel.swift; sourceTree = "<group>"; };
 		5D7E44613B6C58562AB4CA9B /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		61FE8E8A2BEFA8C6385E1FCD /* ConflictSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictSheet.swift; sourceTree = "<group>"; };
+		64D995D060FA2F79F78E7D59 /* GitCloneIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCloneIntegrationTests.swift; sourceTree = "<group>"; };
 		6C76DD20510A382189E1268D /* RepositoryLocatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryLocatorTests.swift; sourceTree = "<group>"; };
 		70C59249D2A10B1EC23FCCAD /* GraphCellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphCellView.swift; sourceTree = "<group>"; };
 		719E47EC72E4D734551D4597 /* SearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSheet.swift; sourceTree = "<group>"; };
@@ -137,6 +142,7 @@
 		7DB387918713DDE346471E54 /* StashTagModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StashTagModels.swift; sourceTree = "<group>"; };
 		7F97F082BFCC01A376D01923 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		7FE7D36EE387D4C31F83D567 /* GitRepository+Search.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitRepository+Search.swift"; sourceTree = "<group>"; };
+		811ED770431D8C229577D7FE /* CloneService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloneService.swift; sourceTree = "<group>"; };
 		8423A4FD9528433659727E2F /* GitError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitError.swift; sourceTree = "<group>"; };
 		84F22726D8340336373C4AD5 /* DiscardConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscardConfirmation.swift; sourceTree = "<group>"; };
 		8641E97F516FCD8DC1E8941E /* DetailPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailPaneView.swift; sourceTree = "<group>"; };
@@ -223,6 +229,7 @@
 		0BBB64BFA109F88672BFDE7E /* Git */ = {
 			isa = PBXGroup;
 			children = (
+				811ED770431D8C229577D7FE /* CloneService.swift */,
 				393CF43789D88C846FEC04F0 /* GitCommand.swift */,
 				EBE825F1518D7916E20C6203 /* GitCommandExecutor.swift */,
 				8423A4FD9528433659727E2F /* GitError.swift */,
@@ -285,6 +292,7 @@
 				DA6CC226819995BCB3E9A126 /* ConflictParserTests.swift */,
 				BA52CF745F166A343A090C8E /* DiffEngineTests.swift */,
 				3C58C45378762E287B625E8B /* GitBranchIntegrationTests.swift */,
+				64D995D060FA2F79F78E7D59 /* GitCloneIntegrationTests.swift */,
 				D7B5A44289A4C2C3E731F3C2 /* GitHistoryIntegrationTests.swift */,
 				1E0317FC7DCAFB943BC5F62D /* GitPhase5IntegrationTests.swift */,
 				D480E763B6274318985A63F4 /* GitRepositoryTests.swift */,
@@ -448,6 +456,7 @@
 			isa = PBXGroup;
 			children = (
 				C914DDA29317D10BADFBB3CA /* BranchSheets.swift */,
+				24C021F72A4BE72E971E92C0 /* CloneRemoteSheet.swift */,
 				D3C0B930AE48669E488A2A6C /* StashTagSheets.swift */,
 			);
 			path = Sheets;
@@ -617,6 +626,7 @@
 				2C950E8C44642DAB2A5022C1 /* ConflictParserTests.swift in Sources */,
 				94B88B7EE794CBA9C4CE063E /* DiffEngineTests.swift in Sources */,
 				2B87797897E89CF685061E3F /* GitBranchIntegrationTests.swift in Sources */,
+				81FC6D73AFCBD3120B16BB6D /* GitCloneIntegrationTests.swift in Sources */,
 				A52E004AF917308AB9DCAFCF /* GitHistoryIntegrationTests.swift in Sources */,
 				78D7C61F0160FFC86606BC30 /* GitPhase5IntegrationTests.swift in Sources */,
 				E35A437AEFF203FCE08926AA /* GitRepositoryTests.swift in Sources */,
@@ -640,6 +650,8 @@
 				3A46639FC2E8629DC35A8BC1 /* BranchModel.swift in Sources */,
 				8810F8ED9442176763858C40 /* BranchSheets.swift in Sources */,
 				1D81A80DCC7C8E70CBE76F24 /* ChangesView.swift in Sources */,
+				EF16FA02EDABE5078705753D /* CloneRemoteSheet.swift in Sources */,
+				E9DEB746DC2E863F60F093F7 /* CloneService.swift in Sources */,
 				438757D81E391BA8114AC846 /* Commit.swift in Sources */,
 				E264B82D4F6AB083A9EC4010 /* CommitComposer.swift in Sources */,
 				0C1EA6E2794BF1339DB39DD1 /* ConflictBannerView.swift in Sources */,

@@ -28,6 +28,21 @@ struct MainWindowView: View {
             return true
         } isTargeted: { viewModel.isDropTargeted = $0 }
         .overlay { dropOverlay }
+        .sheet(item: $viewModel.pendingSheet) { sheet in
+            if let ws = viewModel.workspace {
+                switch sheet {
+                case .search:
+                    SearchSheet(model: ws.workspaceModel) { viewModel.pendingSheet = nil }
+                case .stash:
+                    NewStashSheet(model: ws.workspaceModel) { viewModel.pendingSheet = nil }
+                case .clone:
+                    CloneRemoteSheet(viewModel: viewModel) { viewModel.pendingSheet = nil }
+                }
+            } else {
+                // Welcome state: only clone applies.
+                CloneRemoteSheet(viewModel: viewModel) { viewModel.pendingSheet = nil }
+            }
+        }
         .environmentObject(viewModel)
     }
 
@@ -52,14 +67,6 @@ struct MainWindowView: View {
             ConflictSheet(conflict: ws.workspaceModel.conflict) {
                 showConflictSheet = false
                 Task { await ws.workspaceModel.refresh() }
-            }
-        }
-        .sheet(item: $viewModel.pendingSheet) { sheet in
-            switch sheet {
-            case .search:
-                SearchSheet(model: ws.workspaceModel) { viewModel.pendingSheet = nil }
-            case .stash:
-                NewStashSheet(model: ws.workspaceModel) { viewModel.pendingSheet = nil }
             }
         }
     }

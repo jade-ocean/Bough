@@ -12,8 +12,8 @@
 			<sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
 			<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
 			<enclosure url="https://wangyuyang.dev/bough/Bough-0.1.0.dmg"
-				sparkle:edSignature="mLvdkpyX4cQuQ2hxmGqlPz+VHtKa78RVwyMD1ICA+zGp2p81zh71Il3cOvorkvWmiYbd6yooC2+T1gFzw6R0Dg=="
-				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3369181" type="application/x-apple-diskimage"/>
+				sparkle:edSignature="O5Emx1sy6ws12k6CVLOBGiAhLV+69+H+K6/XX7mQAAzMM7tfy7pRBJO18Mo4X25KXUkPcevXBFP+8B/0mNjaCw=="
+				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3402408" type="application/x-apple-diskimage"/>
 		</item>
 	</channel>
 </rss>

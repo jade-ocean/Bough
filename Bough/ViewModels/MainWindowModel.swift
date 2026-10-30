@@ -35,6 +35,7 @@ final class MainWindowModel: ObservableObject {
     enum PendingSheet: String, Identifiable {
         case search
         case stash
+        case clone
 
         var id: String { rawValue }
     }
@@ -107,6 +108,31 @@ extension MainWindowModel {
     }
 }
 
+// MARK: - Clone
+
+extension MainWindowModel {
+
+    /// Clone a remote repo, then open it (and record recents via the normal open path).
+    func cloneRepository(url: String, folderName: String, into parent: URL) async {
+        guard !isProcessing else { return }
+        isProcessing = true
+        activity = "正在克隆远程仓库…"
+        defer { isProcessing = false }
+        do {
+            let dest = try await CloneService.clone(url: url,
+                                                    folderName: folderName,
+                                                    into: parent)
+            Log.repository.info("cloned into: \(dest.path, privacy: .public)")
+            activity = "就绪"
+            await openRepository(at: dest)
+        } catch {
+            Log.repository.error("clone failed: \(String(describing: error), privacy: .public)")
+            banner = .error(error.localizedDescription)
+            activity = "就绪"
+        }
+    }
+}
+
 // MARK: - URL scheme / drag & drop / window routing
 
 extension MainWindowModel {
@@ -165,6 +191,8 @@ extension MainWindowModel {
         switch command {
         case "search":
             pendingSheet = .search
+        case "clone":
+            pendingSheet = .clone
         case "stash":
             pendingSheet = .stash
         case "mode:history":

@@ -31,6 +31,8 @@ struct BoughApp: App {
                 Divider()
                 Button("搜索…") { WorkspaceCommand.send("search") }
                     .keyboardShortcut("f", modifiers: [.command, .shift])
+                Button("克隆远程仓库…") { WorkspaceCommand.send("clone") }
+                    .keyboardShortcut("c", modifiers: [.command, .shift])
                 Divider()
                 Button("历史视图") { WorkspaceCommand.send("mode:history") }
                     .keyboardShortcut("1", modifiers: .command)
