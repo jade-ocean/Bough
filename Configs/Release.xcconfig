@@ -1,0 +1,9 @@
+// Release.xcconfig - Release configuration overrides.
+#include "Signing.xcconfig"
+#include "Base.xcconfig"
+
+// Hardened runtime is a notarization prerequisite (Phase 6).
+ENABLE_HARDENED_RUNTIME = YES
+SWIFT_OPTIMIZATION_LEVEL = -O
+SWIFT_COMPILATION_MODE = wholemodule
+DEAD_CODE_STRIPPING = YES

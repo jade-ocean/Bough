@@ -1,0 +1,15 @@
+// Signing.xcconfig - signing & distribution configuration.
+//
+// How to enable Developer ID signing (required before notarization, Phase 6):
+//   1. Find your Team ID in Xcode > Settings > Accounts.
+//   2. Uncomment the line below and fill in your Team ID:
+// DEVELOPMENT_TEAM = XXXXXXXXXX
+//
+// Debug overrides CODE_SIGN_IDENTITY to "-" (ad-hoc) in Debug.xcconfig,
+// so local development builds run without any certificate.
+// Release keeps "Developer ID Application" + hardened runtime,
+// ready for any notarization step in Phase 6.
+
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Developer ID Application
+PRODUCT_BUNDLE_IDENTIFIER = com.wangyuyang.bough

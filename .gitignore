@@ -1,0 +1,12 @@
+.DS_Store
+DerivedData/
+build/
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+.mimosa/
+.v2c/
+.video_agent/
+Binaries/
+*.dmg
+*.zip

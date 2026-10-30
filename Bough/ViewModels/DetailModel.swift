@@ -1,0 +1,157 @@
+import AppKit
+import Combine
+
+/// Right-pane state: selected commit or working-copy file, its changed files,
+/// and the currently rendered diff.
+@MainActor
+final class DetailModel: ObservableObject {
+    enum Selection: Equatable {
+        case commit(Commit)
+        /// staged: diff against HEAD (index side); untracked renders as all-additions.
+        case worktreeFile(path: String, staged: Bool, isUntracked: Bool)
+        /// Stash patch preview.
+        case stash(StashEntry)
+    }
+
+    struct RenderedDiff: Equatable {
+        let fileChange: FileChange?
+        let diff: DiffFile?
+        let oldImage: NSImage?
+        let newImage: NSImage?
+        let truncated: Bool
+    }
+
+    @Published var selection: Selection?
+    @Published private(set) var files: [FileChange] = []
+    @Published private(set) var rendered: RenderedDiff?
+    @Published var selectedFile: FileChange?
+    @Published var showsSideBySide = false
+
+    /// Detail header info when a commit is selected.
+    @Published private(set) var headerCommit: Commit?
+    private let repository: GitRepository
+    private let lineCap = 5000
+
+    init(repository: GitRepository) {
+        self.repository = repository
+    }
+
+    // MARK: - Selection
+
+    func select(_ selection: Selection?) {
+        guard selection != self.selection else { return }
+        self.selection = selection
+        selectedFile = nil
+        files = []
+        rendered = nil
+        headerCommit = nil
+        Task { await load() }
+    }
+
+    private func load() async {
+        switch selection {
+        case .commit(let commit):
+            headerCommit = (try? await repository.commitBody(sha: commit.sha)) ?? commit
+            files = (try? await repository.changedFiles(sha: commit.sha)) ?? []
+            if files.isEmpty {
+                rendered = nil
+            } else if selectedFile == nil {
+                selectFile(files[0])
+            }
+        case .worktreeFile(let path, let staged, let isUntracked):
+            let kind: FileChange.Kind = isUntracked ? .untracked
+                : (staged ? .modified : .modified)
+            let change = FileChange(path: path, originalPath: nil, kind: kind, isBinary: false)
+            files = [change]
+            selectFile(change)
+        case .stash(let entry):
+            // selectFile routes into renderFile, which renders the stash patch.
+            let change = FileChange(path: entry.selector, originalPath: nil,
+                                    kind: .modified, isBinary: false)
+            files = [change]
+            selectFile(change)
+        case nil:
+            break
+        }
+        let selectionDescription = String(describing: selection)
+        Log.ui.info("detail loaded for \(selectionDescription, privacy: .public)")
+    }
+
+    /// Select a file inside the commit (or the single worktree file) and render its diff.
+    func selectFile(_ file: FileChange) {
+        selectedFile = file
+        Task { await renderFile(file) }
+    }
+
+    private func renderFile(_ file: FileChange) async {
+        switch selection {
+        case .commit(let commit):
+            guard let diffData = try? await repository.fileDiff(sha: commit.sha, path: file.path) else {
+                rendered = RenderedDiff(fileChange: file, diff: nil, oldImage: nil, newImage: nil, truncated: false)
+                return
+            }
+            await render(data: diffData, file: file, commitSha: commit.sha)
+        case .worktreeFile(let path, let staged, let isUntracked):
+            guard let diffData = try? await repository.worktreeDiff(path: path, staged: staged, isUntracked: isUntracked) else {
+                rendered = RenderedDiff(fileChange: file, diff: nil, oldImage: nil, newImage: nil, truncated: false)
+                return
+            }
+            await render(data: diffData, file: file, commitSha: nil)
+        case .stash(let entry):
+            guard let diffData = try? await repository.stashShow(entry.selector) else {
+                rendered = nil
+                return
+            }
+            let stashFile = FileChange(path: entry.message,
+                                       originalPath: nil,
+                                       kind: .modified,
+                                       isBinary: false)
+            await render(data: diffData, file: stashFile, commitSha: nil)
+        case nil:
+            break
+        }
+    }
+
+    private func render(data: Data, file: FileChange, commitSha: String?) async {
+        let text = String(decoding: data, as: UTF8.self)
+        var parsed = DiffParser.parse(text).first
+        var truncated = false
+        // Cap rendered lines for pathological diffs.
+        if var file = parsed, file.hunks.count > 0 {
+            var kept: [DiffHunk] = []
+            var budget = lineCap
+            for var hunk in file.hunks {
+                guard budget > 0 else { truncated = true; break }
+                if hunk.lines.count > budget {
+                    hunk = DiffHunk(oldStart: hunk.oldStart, oldCount: hunk.oldCount,
+                                    newStart: hunk.newStart, newCount: hunk.newCount,
+                                    section: hunk.section,
+                                    lines: Array(hunk.lines.prefix(budget)))
+                    truncated = true
+                }
+                budget -= hunk.lines.count
+                kept.append(hunk)
+                if truncated { break }
+            }
+            parsed = DiffFile(hunks: kept, isBinary: file.isBinary, path: file.path)
+        }
+        // Image preview: binary + known extension -> load both versions.
+        if let parsed, parsed.isBinary, file.isImage, let sha = commitSha {
+            let oldData = try? await repository.blobContent(ref: "\(sha)^", path: file.path)
+            let newData = try? await repository.blobContent(ref: sha, path: path(for: file))
+            rendered = RenderedDiff(fileChange: file,
+                                    diff: parsed,
+                                    oldImage: oldData.flatMap { NSImage(data: $0) },
+                                    newImage: newData.flatMap { NSImage(data: $0) },
+                                    truncated: truncated)
+            return
+        }
+        rendered = RenderedDiff(fileChange: file, diff: parsed,
+                                oldImage: nil, newImage: nil, truncated: truncated)
+    }
+
+    /// Rename-aware blob path: the versioned name at that ref.
+    private func path(for file: FileChange) -> String {
+        file.path
+    }
+}

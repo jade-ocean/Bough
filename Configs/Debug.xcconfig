@@ -1,0 +1,11 @@
+// Debug.xcconfig - Debug-only overrides.
+#include "Signing.xcconfig"
+#include "Base.xcconfig"
+
+// Ad-hoc signing for local development: no certificate needed to run/debug.
+// Release keeps Developer ID Application for the notarization pipeline (Phase 6).
+CODE_SIGN_IDENTITY = -
+ENABLE_TESTABILITY = YES
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DEBUG=1
