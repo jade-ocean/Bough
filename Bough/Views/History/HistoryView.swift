@@ -101,8 +101,32 @@ struct HistoryView: View {
                         contextMenu(for: row.commit)
                     }
             }
+            if history.canLoadMore {
+                loadMoreRow
+            }
         }
         .listStyle(.plain)
+    }
+
+    private var loadMoreRow: some View {
+        HStack {
+            Spacer()
+            if history.isLoadingMore {
+                ProgressView().controlSize(.small)
+                Text("加载中…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Button("加载更早的提交（已载入 \(history.rows.count)）") {
+                    Task { await history.loadMore() }
+                }
+                .buttonStyle(.link)
+                .font(.callout)
+            }
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
     }
 
     private var selectedCommit: Binding<Commit?> {
@@ -191,6 +215,9 @@ struct HistoryView: View {
             Menu {
                 Button("Fetch 全部远程") { Task { await model.fetchAll() } }
                 Divider()
+                Button("Pull（默认：\(AppPreferences.defaultPullStrategy.rawValue)）") {
+                    Task { await model.pull(strategy: AppPreferences.defaultPullStrategy) }
+                }
                 Button("Pull（merge 策略）") { Task { await model.pull(strategy: .merge) } }
                 Button("Pull（rebase 策略）") { Task { await model.pull(strategy: .rebase) } }
                 Divider()

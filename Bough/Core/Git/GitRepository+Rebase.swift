@@ -26,7 +26,7 @@ extension GitRepository {
         let result = try await runOrThrow([
             "log", "--topo-order", "--reverse",
             "--pretty=format:%H%x1f%s%x1e", "\(base)..HEAD",
-        ])
+        ], serial: false)
         return result.stdoutText
             .split(separator: "\u{1e}", omittingEmptySubsequences: true)
             .compactMap { raw in

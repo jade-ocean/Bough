@@ -165,6 +165,20 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
       （自动 Stash 并恢复 / 直接检出 / 取消）；恢复冲突时诚实保留
       stash@{0} 并以横幅提示（与 git 手动流程语义一致）
 
+## 0.3 迭代（设置 / 拓扑 / 性能）
+
+- [x] **设置页**（Bough > 设置…，Cmd+,）：默认 Pull 策略（单点 Pull 菜单与多仓库批量共用）、
+      Diff 字号（10–16pt 即时生效）、提交签名默认方式；UserDefaults 持久化（`AppPreferences`）
+- [x] **子模块 / Worktree 展示**（P1 #11 收官）：侧栏分区只读列出子模块
+      （状态：正常/未初始化/与记录不一致，点击即开子模块仓库）与 linked worktree
+      （分支 + 当前标记 + 锁定标记）
+- [x] **大仓库历史分页**：首页 500 条，列表尾部「加载更早的提交」增量追加
+      （`--skip` 分页，泳道全量重排保持图形正确）
+- [x] **executor 读写分离**：写操作仍走每仓库 actor 串行（index.lock 安全），
+      读操作（status/log/diff/for-each-ref…）改为无锁并发（`GIT_OPTIONAL_LOCKS=0`）；
+      刷新链路（状态/分支/stash/标签/历史）并发执行。过程中修复了 actor
+      `await` 重入导致的并发写 index.lock 竞态（执行器内加续体 gate 真串行）
+
 ## Roadmap（后续方向）
 
 - [x] 多仓库批量操作（P2 #16）：独立总览窗口（Cmd+Shift+M），并发扫描分支/ahead-behind/脏文件数，

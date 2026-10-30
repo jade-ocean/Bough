@@ -6,8 +6,10 @@ extension GitRepository {
     // MARK: - History
 
     /// `git log --topo-order` with optional filters; parents included for the graph.
-    func commits(filter: HistoryFilter) async throws -> [Commit] {
-        var args = ["log", "--topo-order", "-n", "2000"]
+    /// Pagination: `limit` per page, `skip` offsets the ordered list (load-more).
+    func commits(filter: HistoryFilter, limit: Int = 2000, skip: Int = 0) async throws -> [Commit] {
+        var args = ["log", "--topo-order", "-n", String(limit)]
+        if skip > 0 { args += ["--skip", String(skip)] }
         if filter.allBranches { args.append("--all") }
         args.append(contentsOf: [
             "--pretty=format:%H%x1f%h%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1e",
@@ -27,7 +29,7 @@ extension GitRepository {
         if !filter.path.isEmpty {
             args += ["--", filter.path]
         }
-        let result = try await runOrThrow(args)
+        let result = try await runOrThrow(args, serial: false)
         return GitLogParser.parseHistory(result.stdoutText)
     }
 
@@ -44,7 +46,7 @@ extension GitRepository {
             "log", "-1", "--encoding=UTF-8",
             "--pretty=format:%H%x1f%h%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x1e",
             sha,
-        ])
+        ], serial: false)
         return GitLogParser.parseSingle(result.stdoutText)
     }
 
@@ -53,7 +55,7 @@ extension GitRepository {
         let result = try await runOrThrow([
             "for-each-ref",
             "--format=%(objectname)%00%(refname)%00%(HEAD)",
-        ])
+        ], serial: false)
         var map: [String: [RefDecoration]] = [:]
         for line in result.stdoutText.split(separator: "\n") {
             let fields = line.split(separator: "\u{0}", omittingEmptySubsequences: false).map(String.init)
@@ -68,7 +70,7 @@ extension GitRepository {
 
     /// HEAD sha; nil on unborn repository.
     func headSha() async throws -> String? {
-        let result = try await run(["rev-parse", "--verify", "-q", "HEAD"])
+        let result = try await run(["rev-parse", "--verify", "-q", "HEAD"], serial: false)
         guard result.succeeded else { return nil }
         let text = result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
         return text.isEmpty ? nil : text
@@ -83,10 +85,10 @@ extension GitRepository {
     func changedFiles(sha: String) async throws -> [FileChange] {
         let statusResult = try await runOrThrow([
             "diff-tree", "--no-commit-id", "--name-status", "--root", "-r", "-M", sha,
-        ])
+        ], serial: false)
         let numstatResult = try await run([
             "diff-tree", "--no-commit-id", "--numstat", "--root", "-r", "-M", sha,
-        ])
+        ], serial: false)
         let binaryPaths = Self.binaryPaths(from: numstatResult.stdoutText)
         var changes: [FileChange] = []
         for line in statusResult.stdoutText.split(separator: "\n") {
@@ -129,11 +131,11 @@ extension GitRepository {
         } else {
             args = ["diff", "--no-color", "-U3", "\(sha)^", sha, "--", path]
         }
-        return try await runOrThrow(args).stdout
+        return try await runOrThrow(args, serial: false).stdout
     }
 
     private func isRootCommit(_ sha: String) async throws -> Bool {
-        let result = try await run(["rev-list", "--parents", "-n", "1", sha])
+        let result = try await run(["rev-list", "--parents", "-n", "1", sha], serial: false)
         // "sha parent1 parent2" - root commits list no parents.
         let line = result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
         return line.split(separator: " ").count == 1
@@ -143,18 +145,18 @@ extension GitRepository {
     func worktreeDiff(path: String, staged: Bool, isUntracked: Bool) async throws -> Data {
         if isUntracked {
             // Exit code 1 = differences found (expected).
-            let result = try await run(["diff", "--no-index", "--no-color", "-U3", "--", "/dev/null", path])
+            let result = try await run(["diff", "--no-index", "--no-color", "-U3", "--", "/dev/null", path], serial: false)
             return result.stdout
         }
         let args = staged
             ? ["diff", "--cached", "--no-color", "-U3", "--", path]
             : ["diff", "--no-color", "-U3", "--", path]
-        return try await runOrThrow(args).stdout
+        return try await runOrThrow(args, serial: false).stdout
     }
 
     /// Blob content at a ref (for image previews): `git show <ref>:<path>`.
     func blobContent(ref: String, path: String) async throws -> Data {
-        try await runOrThrow(["show", "\(ref):\(path)"]).stdout
+        try await runOrThrow(["show", "\(ref):\(path)"], serial: false).stdout
     }
 
     // MARK: - HEAD operations (context menu)

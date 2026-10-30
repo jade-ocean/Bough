@@ -13,7 +13,7 @@ final class WorkspaceModel: ObservableObject {
     // Commit composer state
     @Published var commitMessage = ""
     @Published var isAmendEnabled = false
-    @Published var signing: CommitSigning = .followConfig
+    @Published var signing: CommitSigning = AppPreferences.defaultSigning
 
     /// Pending discard request awaiting user confirmation (drives the sheet).
     @Published var pendingDiscard: [StatusEntry] = []
@@ -61,12 +61,14 @@ final class WorkspaceModel: ObservableObject {
         return "未配置 git 身份（user.name / user.email），无法提交"
     }
     /// Full refresh for the menu Cmd+R: everything the workspace displays.
+    /// Sub-model reloads run concurrently (reads are lock-free and parallel).
     func refreshAll() async {
-        await refresh()
-        await branches.reload()
-        await stash.reload()
-        await tags.reload()
-        await history.reload()
+        async let statusReload: Void = refresh()
+        async let branchesReload: Void = branches.reload()
+        async let stashReload: Void = stash.reload()
+        async let tagsReload: Void = tags.reload()
+        async let historyReload: Void = history.reload()
+        _ = await (statusReload, branchesReload, stashReload, tagsReload, historyReload)
     }
 
     // MARK: - Load
@@ -75,8 +77,9 @@ final class WorkspaceModel: ObservableObject {
         isBusy = true
         defer { isBusy = false }
         do {
-            status = try await repository.status()
-            identity = try await repository.identity()
+            async let statusFetch = repository.status()
+            async let identityFetch = repository.identity()
+            (status, identity) = try await (statusFetch, identityFetch)
         } catch {
             banner = .error(error.localizedDescription)
             Log.git.error("status failed: \(String(describing: error), privacy: .public)")
@@ -338,11 +341,12 @@ final class WorkspaceModel: ObservableObject {
             Log.git.error("mutation failed: \(String(describing: error), privacy: .public)")
         }
         await refresh()
-        await branches.reload()
-        await stash.reload()
-        await tags.reload()
+        async let branchesReload: Void = branches.reload()
+        async let stashReload: Void = stash.reload()
+        async let tagsReload: Void = tags.reload()
         if reloadsHistory {
             await history.reload()
         }
+        _ = await (branchesReload, stashReload, tagsReload)
     }
 }

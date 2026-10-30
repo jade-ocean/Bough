@@ -24,6 +24,9 @@ struct BoughApp: App {
                 .environmentObject(recentStore)
         }
         .windowResizability(.contentSize)
+        Settings {
+            SettingsView()
+        }
         .commands {
             CommandGroup(after: .newItem) {
                 Button("打开仓库…") {

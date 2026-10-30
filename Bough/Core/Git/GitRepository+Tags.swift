@@ -19,7 +19,7 @@ extension GitRepository {
         let result = try await runOrThrow([
             "for-each-ref", "refs/tags",
             "--format=%(refname:short)%00%(objectname)%00%(objecttype)%00%(contents:subject)",
-        ])
+        ], serial: false)
         return result.stdoutText
             .split(separator: "\n", omittingEmptySubsequences: true)
             .compactMap { line in

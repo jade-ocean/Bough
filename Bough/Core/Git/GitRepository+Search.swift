@@ -32,7 +32,7 @@ extension GitRepository {
         if !options.pathPrefix.isEmpty {
             args += ["--", options.pathPrefix]
         }
-        let result = try await run(args)
+        let result = try await run(args, serial: false)
         // Exit 1 = no matches (a normal outcome, not an error); 2 = regex error.
         guard result.succeeded || result.exitCode == 1 else {
             throw GitError.executionFailed(command: args.joined(separator: " "),
@@ -65,7 +65,7 @@ extension GitRepository {
         let result = try await runOrThrow([
             "log", "--all", "-n", String(limit), "-i", "--grep", text,
             "--pretty=format:%H%x1f%h%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1e",
-        ])
+        ], serial: false)
         return GitLogParser.parseHistory(result.stdoutText)
     }
 }

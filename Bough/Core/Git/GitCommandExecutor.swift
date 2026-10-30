@@ -38,8 +38,32 @@ actor GitCommandExecutor {
 
     // MARK: - Execution
 
+    /// Reentrancy gate: `await` on process exit releases the actor, so two
+    /// callers could otherwise run git processes concurrently (index.lock
+    /// races). The gate holds the actor busy until the process finishes.
+    private var gateIsRunning = false
+    private var gateWaiters: [CheckedContinuation<Void, Never>] = []
+
+    private func acquireGate() async {
+        if !gateIsRunning {
+            gateIsRunning = true
+            return
+        }
+        await withCheckedContinuation { gateWaiters.append($0) }
+    }
+
+    private func releaseGate() {
+        if gateWaiters.isEmpty {
+            gateIsRunning = false
+        } else {
+            gateWaiters.removeFirst().resume()
+        }
+    }
+
     func run(_ command: GitCommand) async throws -> GitResult {
         try Task.checkCancellation()
+        await acquireGate()
+        defer { releaseGate() }
         let started = DispatchTime.now()
 
         let process = Process()

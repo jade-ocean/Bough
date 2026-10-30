@@ -145,6 +145,9 @@ struct ChangesView: View {
             Menu {
                 Button("Fetch 全部远程") { Task { await model.fetchAll() } }
                 Divider()
+                Button("Pull（默认：\(AppPreferences.defaultPullStrategy.rawValue)）") {
+                    Task { await model.pull(strategy: AppPreferences.defaultPullStrategy) }
+                }
                 Button("Pull（merge 策略）") { Task { await model.pull(strategy: .merge) } }
                 Button("Pull（rebase 策略）") { Task { await model.pull(strategy: .rebase) } }
                 Divider()

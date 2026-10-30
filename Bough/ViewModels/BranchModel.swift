@@ -7,6 +7,8 @@ final class BranchModel: ObservableObject {
     @Published private(set) var local: [Branch] = []
     @Published private(set) var remote: [Branch] = []
     @Published private(set) var remotes: [RemoteInfo] = []
+    @Published private(set) var submodules: [GitRepository.SubmoduleInfo] = []
+    @Published private(set) var worktrees: [GitRepository.WorktreeInfo] = []
     @Published private(set) var isLoading = false
 
     private let repository: GitRepository
@@ -39,6 +41,8 @@ final class BranchModel: ObservableObject {
                 .filter { !$0.name.contains("HEAD") }
                 .sorted { $0.name < $1.name }
             remotes = try await repository.remotes()
+            submodules = await repository.submodules()
+            worktrees = await repository.worktrees()
         } catch {
             Log.git.error("branch load failed: \(String(describing: error), privacy: .public)")
         }

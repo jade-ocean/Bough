@@ -20,7 +20,7 @@ extension GitRepository {
         let result = try await runOrThrow([
             "reflog", "-n", "200",
             "--pretty=format:%H%x1f%h%x1f%at%x1f%gD%x1f%gs%x1e",
-        ])
+        ], serial: false)
         return result.stdoutText
             .split(separator: "\u{1e}", omittingEmptySubsequences: true)
             .compactMap { raw in

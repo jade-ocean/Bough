@@ -11,10 +11,10 @@ extension GitRepository {
         let localResult = try await runOrThrow([
             "for-each-ref", "refs/heads",
             "--format=%(refname:short)%00%(objectname)%00%(HEAD)%00%(upstream:short)%00%(upstream:track)",
-        ])
+        ], serial: false)
         let remoteResult = try await runOrThrow([
             "for-each-ref", "refs/remotes", "--format=%(refname:short)%00%(objectname)",
-        ])
+        ], serial: false)
 
         func parse(_ output: String, isRemote: Bool) -> [Branch] {
             output.split(separator: "\n").compactMap { line in
@@ -44,7 +44,7 @@ extension GitRepository {
 
     /// Entries from `git remote -v` (deduplicated fetch/push pairs).
     func remotes() async throws -> [RemoteInfo] {
-        let result = try await runOrThrow(["remote", "-v"])
+        let result = try await runOrThrow(["remote", "-v"], serial: false)
         var order: [String] = []
         var fetch: [String: String] = [:]
         var push: [String: String] = [:]
@@ -69,7 +69,7 @@ extension GitRepository {
 
     /// Validate a branch name via git itself.
     func isBranchNameValid(_ name: String) async -> Bool {
-        let result = try? await run(["check-ref-format", "--branch", name])
+        let result = try? await run(["check-ref-format", "--branch", name], serial: false)
         return result?.succeeded == true
     }
     // MARK: - Branch mutations

@@ -5,7 +5,9 @@ import Foundation
 struct GitRepository: Sendable {
     let root: URL
 
-    private let executor: GitCommandExecutor
+    /// Serialized actor executor for mutations (index.lock safety).
+    private let writeExecutor: GitCommandExecutor
+    private let gitBinaryPath: String
 
     /// - Parameters:
     ///   - root: validated worktree root (from RepositoryAccessProvider).
@@ -18,28 +20,41 @@ struct GitRepository: Sendable {
         } else {
             binary = try GitLocator.locate()
         }
-        self.executor = GitCommandExecutor(gitBinary: binary, workingDirectory: root)
+        self.writeExecutor = GitCommandExecutor(gitBinary: binary, workingDirectory: root)
+        self.gitBinaryPath = binary
     }
 
     // MARK: - Primitives
 
     /// Internal so the +History extension (separate file) can reuse the executor.
+    /// - Parameter serial: true (default) routes through the per-repo write
+    ///   actor (mutations queue, index.lock safe). false spawns an ephemeral
+    ///   executor so reads run concurrently - with GIT_OPTIONAL_LOCKS=0 reads
+    ///   take no locks, so read/write overlap is safe and refreshes parallelize.
     @discardableResult
     func run(_ arguments: [String], timeout: TimeInterval = 30,
              extraEnvironment: [String: String] = [:],
-             stdinData: Data? = nil) async throws -> GitResult {
-        try await executor.run(GitCommand(arguments, timeout: timeout,
-                                          stdinData: stdinData,
-                                          extraEnvironment: extraEnvironment))
+             stdinData: Data? = nil,
+             serial: Bool = true) async throws -> GitResult {
+        let command = GitCommand(arguments, timeout: timeout,
+                                 stdinData: stdinData,
+                                 extraEnvironment: extraEnvironment)
+        if serial {
+            return try await writeExecutor.run(command)
+        }
+        let reader = GitCommandExecutor(gitBinary: gitBinaryPath, workingDirectory: root)
+        return try await reader.run(command)
     }
 
     /// Fail with a typed error when git exits non-zero.
     func runOrThrow(_ arguments: [String], timeout: TimeInterval = 30,
                     extraEnvironment: [String: String] = [:],
-                    stdinData: Data? = nil) async throws -> GitResult {
+                    stdinData: Data? = nil,
+                    serial: Bool = true) async throws -> GitResult {
         let result = try await run(arguments, timeout: timeout,
                                    extraEnvironment: extraEnvironment,
-                                   stdinData: stdinData)
+                                   stdinData: stdinData,
+                                   serial: serial)
         guard result.succeeded else {
             throw GitError.executionFailed(
                 command: arguments.joined(separator: " "),
@@ -66,7 +81,7 @@ struct GitRepository: Sendable {
 
     /// `git --version` smoke probe used by tests and diagnostics.
     func version() async throws -> String {
-        let result = try await runOrThrow(["--version"])
+        let result = try await runOrThrow(["--version"], serial: false)
         return result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     // MARK: - Status
@@ -90,7 +105,7 @@ struct GitRepository: Sendable {
     /// Internal so extensions can read repo config (SSL settings etc.).
     func configValue(_ key: String) async throws -> String? {
         // Exit code 1 = key unset (not an error for our purposes).
-        guard let result = try? await run(["config", "--get", key]) else { return nil }
+        guard let result = try? await run(["config", "--get", key], serial: false) else { return nil }
         let value = result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
         return value.isEmpty ? nil : value
     }
@@ -157,12 +172,12 @@ struct GitRepository: Sendable {
         let result = try await runOrThrow([
             "log", "-1", "--encoding=UTF-8",
             "--pretty=format:%H%x1f%h%x1f%an%x1f%ae%x1f%at%x1f%s%x1f%b%x1e",
-        ])
+        ], serial: false)
         return GitLogParser.parseSingle(result.stdoutText)
     }
 
     private func isHeadUnborn() async throws -> Bool {
-        let result = try await run(["rev-parse", "--verify", "-q", "HEAD"])
+        let result = try await run(["rev-parse", "--verify", "-q", "HEAD"], serial: false)
         return !result.succeeded
     }
 }

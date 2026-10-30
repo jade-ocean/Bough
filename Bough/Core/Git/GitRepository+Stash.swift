@@ -19,7 +19,7 @@ extension GitRepository {
     func stashList() async throws -> [StashEntry] {
         let result = try await runOrThrow([
             "stash", "list", "--pretty=format:%gd%x1f%H%x1f%at%x1f%gs%x1e",
-        ])
+        ], serial: false)
         return result.stdoutText
             .split(separator: "\u{1e}", omittingEmptySubsequences: true)
             .compactMap { raw in
@@ -63,6 +63,6 @@ extension GitRepository {
 
     /// Patch text of a stash for viewing (reuses the diff pipeline).
     func stashShow(_ selector: String) async throws -> Data {
-        try await runOrThrow(["stash", "show", "--no-color", "-U3", "--include-untracked", selector]).stdout
+        try await runOrThrow(["stash", "show", "--no-color", "-U3", "--include-untracked", selector], serial: false).stdout
     }
 }

@@ -51,6 +51,7 @@ struct SidebarView: View {
             recentsSection
             branchesSection
             remoteBranchesSection
+            topologySection
             remotesSection
             stashSection
             tagsSection
@@ -236,6 +237,61 @@ struct SidebarView: View {
                     }
                 }
             }
+    }
+
+    @ViewBuilder
+    private var topologySection: some View {
+        if !branches.submodules.isEmpty || !branches.worktrees.isEmpty {
+            Section("子模块 & Worktree") {
+                ForEach(branches.submodules, id: \.id) { (sub: GitRepository.SubmoduleInfo) in
+                    HStack(spacing: 6) {
+                        Label(sub.path, systemImage: "shippingbox")
+                            .lineLimit(1)
+                        Spacer()
+                        Text(sub.stateText)
+                            .font(.caption2)
+                            .foregroundStyle(sub.isInitialized ? Color.secondary : Color.orange)
+                    }
+                    .contentShape(Rectangle())
+                    .contextMenu {
+                        Button("打开子模块仓库") { openSubmodule(sub) }
+                    }
+                    .onTapGesture { openSubmodule(sub) }
+                    .help("\(sub.path) · \(sub.stateText)")
+                }
+                ForEach(branches.worktrees.filter { !$0.isMain }, id: \.id) { (wt: GitRepository.WorktreeInfo) in
+                    HStack(spacing: 6) {
+                        Label(wt.path.split(separator: "/").last.map(String.init) ?? wt.path,
+                              systemImage: "externaldrive")
+                            .lineLimit(1)
+                        Spacer()
+                        if wt.isCurrent {
+                            Image(systemName: "checkmark")
+                                .font(.caption2)
+                                .foregroundStyle(.tint)
+                        }
+                        if let branch = wt.branchName {
+                            Text(branch)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        if wt.isLocked {
+                            Image(systemName: "lock")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .help(wt.path)
+                }
+            }
+        }
+    }
+
+    private func openSubmodule(_ sub: GitRepository.SubmoduleInfo) {
+        let url = workspace.root.appendingPathComponent(sub.path)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        PendingOpenRouter.shared.pendingPath = url.path
+        openWindow(id: "main")
     }
 
     private var remotesSection: some View {

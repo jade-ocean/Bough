@@ -148,3 +148,84 @@ final class WorkspaceSafetyTests: XCTestCase {
         }
     }
 }
+
+/// Read/write separation: concurrent lock-free reads with serialized writes.
+final class ExecutorSplitTests: XCTestCase {
+
+    private var tempRoot: URL!
+    private var gitBinary: String!
+
+    override func setUpWithError() throws {
+        tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("BoughExecTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempRoot, withIntermediateDirectories: true)
+        gitBinary = try GitLocator.locate()
+    }
+
+    override func tearDownWithError() throws {
+        if let tempRoot { try? FileManager.default.removeItem(at: tempRoot) }
+    }
+
+    private func seed() async throws -> GitRepository {
+        let dir = tempRoot.appendingPathComponent("repo", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let setup = GitCommandExecutor(gitBinary: gitBinary, workingDirectory: dir)
+        func git(_ args: [String]) async throws {
+            let result = try await setup.run(GitCommand(args))
+            guard result.succeeded else {
+                throw GitError.executionFailed(command: args.joined(separator: " "),
+                                               exitCode: result.exitCode, stderr: result.stderr)
+            }
+        }
+        try await git(["init", "-q", "-b", "main"])
+        try await git(["config", "user.name", "Exec"])
+        try await git(["config", "user.email", "e@bough.local"])
+        try "a\n".write(to: dir.appendingPathComponent("a.txt"), atomically: true, encoding: .utf8)
+        try await git(["add", "."]); try await git(["commit", "-q", "-m", "c1"])
+        return try GitRepository(root: dir, gitBinary: gitBinary)
+    }
+
+    func testConcurrentReadsAllSucceed() async throws {
+        let repo = try await seed()
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<12 {
+                group.addTask {
+                    _ = try await repo.status()
+                    _ = try await repo.branches()
+                    _ = try await repo.reflog()
+                }
+            }
+            try await group.waitForAll()
+        }
+    }
+
+    func testWritesSerializeAndFinalStateConsistent() async throws {
+        let repo = try await seed()
+        // Phase 1: concurrent writes+stages+reads - the shared write actor
+        // must serialize them without index.lock races.
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for index in 0..<5 {
+                group.addTask {
+                    try "content\(index)\n".write(
+                        to: repo.root.appendingPathComponent("w\(index).txt"),
+                        atomically: true, encoding: .utf8)
+                    try await repo.runOrThrow(["add", "-A"])
+                    _ = try await repo.status()
+                    _ = try await repo.branches()
+                }
+            }
+            try await group.waitForAll()
+        }
+        // Phase 2: pathspec commits - each lands exactly its own file
+        // regardless of what else sits in the index.
+        for index in 0..<5 {
+            try await repo.runOrThrow([
+                "commit", "-m", "w\(index)", "--", "w\(index).txt",
+            ])
+        }
+        let commits = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        XCTAssertEqual(commits.count, 6) // c1 + 5 writes
+        let status = try await repo.status()
+        XCTAssertFalse(status.hasChanges)
+    }
+}

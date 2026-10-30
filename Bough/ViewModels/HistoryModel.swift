@@ -8,6 +8,8 @@ final class HistoryModel: ObservableObject {
     @Published private(set) var decorations: [String: [RefDecoration]] = [:]
     @Published private(set) var headSha: String?
     @Published private(set) var isLoading = false
+    @Published private(set) var canLoadMore = false
+    @Published private(set) var isLoadingMore = false
     /// Client-side text match over sha/shortSha (git --grep covers subject/author).
     @Published var textQuery = ""
 
@@ -21,6 +23,8 @@ final class HistoryModel: ObservableObject {
 
     private var reloadTask: Task<Void, Never>?
     private let repository: GitRepository
+    private let pageSize = 500
+    private(set) var loadedCommits: [Commit] = []
 
     init(repository: GitRepository) {
         self.repository = repository
@@ -52,15 +56,40 @@ final class HistoryModel: ObservableObject {
         decorations[sha] ?? []
     }
 
+    /// Append the next page and relayout (lanes depend on the full loaded set).
+    func loadMore() async {
+        guard canLoadMore, !isLoadingMore else { return }
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let fetched = try await repository.commits(filter: filter,
+                                                       limit: pageSize + 1,
+                                                       skip: loadedCommits.count)
+            loadedCommits += fetched.prefix(pageSize)
+            canLoadMore = fetched.count > pageSize
+            try await relayout()
+        } catch {
+            Log.git.error("loadMore failed: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    private func relayout() async throws {
+        let commits = loadedCommits
+        // Lane assignment is pure CPU work - keep it off main.
+        rows = await Task.detached(priority: .userInitiated) {
+            GraphLayouter.layout(commits)
+        }.value
+    }
+
+    /// Full reload: first page + decorations + HEAD.
     func reload() async {
         isLoading = true
         defer { isLoading = false }
         do {
-            let commits = try await repository.commits(filter: filter)
-            // Lane assignment is pure CPU work on up to 2000 commits - keep it off main.
-            rows = await Task.detached(priority: .userInitiated) {
-                GraphLayouter.layout(commits)
-            }.value
+            let fetched = try await repository.commits(filter: filter, limit: pageSize + 1)
+            loadedCommits = Array(fetched.prefix(pageSize))
+            canLoadMore = fetched.count > pageSize
+            try await relayout()
             decorations = try await repository.refDecorations()
             headSha = try await repository.headSha()
             let count = rows.count

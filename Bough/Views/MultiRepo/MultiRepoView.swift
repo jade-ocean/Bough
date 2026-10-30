@@ -50,12 +50,12 @@ struct MultiRepoView: View {
         .confirmationDialog("对全部仓库执行 pull（merge）？",
                             isPresented: $model.showsPullConfirm,
                             titleVisibility: .visible) {
-            Button("Pull 全部（merge 策略）", role: .destructive) {
+            Button("Pull 全部（\(AppPreferences.defaultPullStrategy.rawValue) 策略）", role: .destructive) {
                 Task { await model.pullAll() }
             }
             Button("取消", role: .cancel) {}
         } message: {
-            Text("将在每个有效仓库上执行 git pull --no-rebase；有冲突的仓库会标记失败并保留冲突现场。")
+            Text("将在每个有效仓库上执行 git pull（\(AppPreferences.defaultPullStrategy.rawValue) 策略）；有冲突的仓库会标记失败并保留冲突现场。")
         }
     }
 

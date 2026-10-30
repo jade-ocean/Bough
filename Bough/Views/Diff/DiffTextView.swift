@@ -77,13 +77,14 @@ private struct InlineBody: View {
 private struct InlineRow: View {
     let line: DiffLine
     let tracker: HighlightTracker
+    @AppStorage(AppPreferences.diffFontSizeKey) private var fontSize: Double = 12
 
     var body: some View {
         HStack(spacing: 0) {
             GutterCell(value: line.oldNumber, width: 44)
             GutterCell(value: line.newNumber, width: 44)
             Text(tracker.attributed(line))
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: fontSize, design: .monospaced))
                 .frame(maxWidth: .infinity, minHeight: 17, alignment: .leading)
                 .padding(.trailing, 8)
         }
@@ -147,6 +148,7 @@ private struct SideBySideBody: View {
 private struct SideBySideRow: View {
     let pair: DiffParser.SidePair
     let tracker: HighlightTracker
+    @AppStorage(AppPreferences.diffFontSizeKey) private var fontSize: Double = 12
 
     var body: some View {
         HStack(spacing: 0) {
@@ -162,7 +164,7 @@ private struct SideBySideRow: View {
         HStack(spacing: 0) {
             GutterCell(value: line?.oldNumber ?? line?.newNumber, width: 40)
             Text(line.map { tracker.attributed($0) } ?? AttributedString(" "))
-                .font(.system(size: 12, design: .monospaced))
+                .font(.system(size: fontSize, design: .monospaced))
                 .frame(maxWidth: .infinity, minHeight: 17, alignment: .leading)
                 .padding(.horizontal, 4)
         }

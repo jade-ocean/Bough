@@ -56,7 +56,8 @@ final class MultiRepoModel: ObservableObject {
     }
 
     func pullAll() async {
-        await runBatch("pull 完成") { try await $0.pull(strategy: .merge) }
+        let strategy = AppPreferences.defaultPullStrategy
+        await runBatch("pull（\(strategy.rawValue)）完成") { try await $0.pull(strategy: strategy) }
     }
 
     private func runBatch(_ successText: String,
