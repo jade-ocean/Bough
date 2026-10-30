@@ -18,6 +18,12 @@ struct BoughApp: App {
                 .modelContainer(recentStore.modelContainer)
                 .environmentObject(recentStore)
         }
+        Window("多仓库总览", id: "multi-repo") {
+            MultiRepoView()
+                .modelContainer(recentStore.modelContainer)
+                .environmentObject(recentStore)
+        }
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(after: .newItem) {
                 Button("打开仓库…") {
@@ -33,6 +39,11 @@ struct BoughApp: App {
                     .keyboardShortcut("f", modifiers: [.command, .shift])
                 Button("克隆远程仓库…") { WorkspaceCommand.send("clone") }
                     .keyboardShortcut("c", modifiers: [.command, .shift])
+                Divider()
+                Button("多仓库总览") {
+                    NotificationCenter.default.post(name: .boughOpenMultiRepo, object: nil)
+                }
+                .keyboardShortcut("m", modifiers: [.command, .shift])
                 Divider()
                 Button("历史视图") { WorkspaceCommand.send("mode:history") }
                     .keyboardShortcut("1", modifiers: .command)

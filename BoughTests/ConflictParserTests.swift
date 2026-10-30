@@ -89,6 +89,42 @@ final class ConflictParserTests: XCTestCase {
         XCTAssertEqual(updated.unresolvedCount, 1)
     }
 
+    func testLineLevelPicksTakePrecedence() {
+        let result = ConflictParser.parse(standardConflict)
+        var block = result.blocks[0]
+        block.selectedOurs = [0]
+        block.selectedTheirs = [0]
+        XCTAssertTrue(block.isResolved)
+        XCTAssertEqual(ConflictParser.resolve(block), ["ours line", "theirs line"])
+
+        // ours only, reordered source arrays keep index order
+        var oursOnly = result.blocks[0]
+        oursOnly.selectedOurs = [0]
+        oursOnly.selectedTheirs = []
+        XCTAssertEqual(ConflictParser.resolve(oursOnly), ["ours line"])
+    }
+
+    func testSetChoiceClearsLinePicks() {
+        let result = ConflictParser.parse(standardConflict)
+        var block = result.blocks[0]
+        block.selectedTheirs = [0]
+        block.setChoice(.both)
+        XCTAssertEqual(block.choice, .both)
+        XCTAssertTrue(block.selectedTheirs.isEmpty)
+        XCTAssertTrue(block.selectedOurs.isEmpty)
+        XCTAssertEqual(ConflictParser.resolve(block), ["ours line", "theirs line"])
+    }
+
+    func testUnresolvedCountUsesLinePicks() {
+        let result = ConflictParser.parse(standardConflict)
+        var updated = result
+        var block = updated.blocks[0]
+        block.selectedOurs = [0]
+        updated.segments[1] = .conflict(block)
+        XCTAssertEqual(updated.unresolvedCount, 0)
+        XCTAssertTrue(updated.allResolved)
+    }
+
     func testEmptyContentYieldsEmpty() {
         let result = ConflictParser.parse("")
         XCTAssertTrue(result.segments.isEmpty)

@@ -223,6 +223,7 @@ enum BoughNotification {
 extension Notification.Name {
     static let boughOpenRequested = Notification.Name("com.wangyuyang.bough.openRequested")
     static let boughWorkspaceCommand = Notification.Name("com.wangyuyang.bough.workspaceCommand")
+    static let boughOpenMultiRepo = Notification.Name("com.wangyuyang.bough.openMultiRepo")
 }
 
 /// Post workspace-level menu commands to the key window's model.

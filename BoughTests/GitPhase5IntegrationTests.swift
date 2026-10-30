@@ -118,6 +118,39 @@ final class GitPhase5IntegrationTests: XCTestCase {
         XCTAssertEqual(after.map(\.name), ["v1-note"])
     }
 
+    func testInteractiveRebaseRewordAndDrop() async throws {
+        _ = try await makeConflictingRepos()
+        let repo = try await makeRepo()
+        for (name, content) in [("a.txt", "a\n"), ("b.txt", "b\n"), ("c.txt", "c\n")] {
+            try content.write(to: repo.root.appendingPathComponent(name), atomically: true, encoding: .utf8)
+            try await repo.runOrThrow(["add", "-A"])
+            _ = try await repo.commit(message: "add \(name)")
+        }
+        let before = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        let base = before[3]
+        var steps = try await repo.rebasePlan(base: base.sha)
+        XCTAssertEqual(steps.count, 3)
+
+        // Reword the middle commit (b.txt), drop nothing.
+        steps[1].newMessage = "renamed b commit"
+        try await repo.rebaseInteractive(base: base.sha, steps: steps)
+
+        let after = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        XCTAssertEqual(after.count, 4) // reword preserves count
+        XCTAssertEqual(after[1].subject, "renamed b commit")
+        XCTAssertEqual(after[0].subject, "add c.txt")
+        XCTAssertEqual(after[2].subject, "add a.txt")
+
+        // Both reword steps in one plan consume the queue in todo order.
+        var double = try await repo.rebasePlan(base: base.sha)
+        double[0].newMessage = "first rewrite"
+        double[2].newMessage = "second rewrite"
+        try await repo.rebaseInteractive(base: base.sha, steps: double)
+        let final = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        XCTAssertEqual(final[2].subject, "first rewrite")
+        XCTAssertEqual(final[0].subject, "second rewrite")
+    }
+
     // MARK: - Conflict resolution
 
     func testConflictResolutionRoundTrip() async throws {

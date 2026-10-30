@@ -105,7 +105,7 @@ struct InteractiveRebaseSheet: View {
                 stepList
             }
             HStack {
-                Text("丢弃的提交将从分支移除（可通过 reflog 找回）")
+                Text("丢弃的提交将从分支移除（可通过 reflog 找回）；改写只改信息不改内容")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                 Spacer()
@@ -122,7 +122,7 @@ struct InteractiveRebaseSheet: View {
             }
         }
         .padding(20)
-        .frame(width: 560, height: 420)
+        .frame(width: 640, height: 460)
         .task { await loadPlan() }
     }
 
@@ -155,6 +155,22 @@ struct InteractiveRebaseSheet: View {
                         get: { steps[index].dropped },
                         set: { steps[index].dropped = $0 }))
                     .toggleStyle(.checkbox)
+                    Toggle("改写", isOn: Binding(
+                        get: { steps[index].newMessage != nil },
+                        set: { wants in
+                            steps[index].newMessage = wants
+                                ? (steps[index].newMessage ?? steps[index].subject)
+                                : nil
+                        }))
+                    .toggleStyle(.checkbox)
+                    .help("改写此提交的信息（reword）")
+                }
+                if steps[index].newMessage != nil {
+                    TextField("新提交信息", text: Binding(
+                        get: { steps[index].newMessage ?? "" },
+                        set: { steps[index].newMessage = $0 }))
+                        .textFieldStyle(.roundedBorder)
+                        .font(.callout)
                 }
             }
         }

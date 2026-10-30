@@ -16,13 +16,28 @@ enum ConflictParser {
         var theirs: [String]
         /// diff3 base section (informational).
         var base: [String]
-        /// Resolution chosen by the user; nil = unresolved.
+        /// Whole-block resolution chosen by the user; nil = unresolved.
         var choice: Choice?
+        /// Line-level picks (indices into ours/theirs); take precedence over
+        /// `choice` when non-empty. Both empty + nil choice = unresolved.
+        var selectedOurs: Set<Int> = []
+        var selectedTheirs: Set<Int> = []
 
         enum Choice: String, Equatable, CaseIterable, Sendable {
             case ours = "ours"
             case theirs = "theirs"
             case both = "both"
+        }
+
+        /// Whole-block choice set (clears line picks); nil resets to unresolved.
+        mutating func setChoice(_ newChoice: Choice?) {
+            choice = newChoice
+            selectedOurs = []
+            selectedTheirs = []
+        }
+
+        var isResolved: Bool {
+            choice != nil || !selectedOurs.isEmpty || !selectedTheirs.isEmpty
         }
     }
 
@@ -37,7 +52,7 @@ enum ConflictParser {
         }
 
         var unresolvedCount: Int {
-            blocks.filter { $0.choice == nil }.count
+            blocks.filter { !$0.isResolved }.count
         }
 
         var allResolved: Bool {
@@ -98,8 +113,13 @@ enum ConflictParser {
 
     // MARK: - Resolution
 
-    /// Apply the block's choice; nil choice falls back to ours (defensive).
+    /// Resolution: non-empty line picks win (ours lines in order, then theirs);
+    /// otherwise the whole-block choice; nil falls back to ours (defensive).
     static func resolve(_ block: ConflictBlock) -> [String] {
+        if !block.selectedOurs.isEmpty || !block.selectedTheirs.isEmpty {
+            return block.selectedOurs.sorted().map { block.ours[$0] }
+                + block.selectedTheirs.sorted().map { block.theirs[$0] }
+        }
         switch block.choice {
         case .ours, nil: return block.ours
         case .theirs: return block.theirs

@@ -150,11 +150,15 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
 
 ## Roadmap（后续方向）
 
-- [ ] 多仓库批量操作（P2 #16）：跨仓库 fetch/pull/状态总览
-- [ ] 交互式 rebase 的 reword 支持（当前仅 keep/drop/重排序）
-- [ ] 冲突视图行内编辑增强（基线列展示、逐行取舍）
-- [ ] appcast 托管上线（DMG + appcast 上传服务器，SUFeedURL 指向真实地址）
-- [ ] 真分层 Liquid Glass 图标（Icon Composer 重建 `.icon`，深色/单色变体）
+- [x] 多仓库批量操作（P2 #16）：独立总览窗口（Cmd+Shift+M），并发扫描分支/ahead-behind/脏文件数，
+      批量 Fetch、批量 Pull（merge，带确认）；核心逻辑 TaskGroup 并发，单仓失败不阻断批次
+- [x] 交互式 rebase 的 reword 支持：todo 注入 `reword` 行，新信息经 GIT_EDITOR 消息队列
+      按序消费（仍不弹编辑器）；Sheet 中每步可标记改写并输入新信息
+- [x] 冲突视图行内编辑增强：逐行勾选 ours/theirs（行级优先于整块选择）、diff3 基线参考列
+- [x] 真分层图标源：`Scripts/make_appicon_layers.swift` 产出 background/foreground/foreground-mono
+      三个 SVG 图层（与主图标同坐标系），Icon Composer 导入即可生成 `.icon`
+- [ ] appcast 托管上线：dist 包已就绪（`build/dist/`：DMG + appcast.xml + UPLOAD.md 托管说明），
+      待确定托管地址后改 SUFeedURL 重出包
 
 ## 应用图标
 

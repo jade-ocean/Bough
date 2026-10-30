@@ -28,6 +28,9 @@ struct MainWindowView: View {
             return true
         } isTargeted: { viewModel.isDropTargeted = $0 }
         .overlay { dropOverlay }
+        .onReceive(NotificationCenter.default.publisher(for: .boughOpenMultiRepo)) { _ in
+            openWindow(id: "multi-repo")
+        }
         .sheet(item: $viewModel.pendingSheet) { sheet in
             if let ws = viewModel.workspace {
                 switch sheet {

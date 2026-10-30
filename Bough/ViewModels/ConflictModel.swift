@@ -47,7 +47,25 @@ final class ConflictModel: ObservableObject {
     func setChoice(_ choice: ConflictParser.ConflictBlock.Choice, blockIndex: Int) {
         guard parseResult.segments.indices.contains(blockIndex),
               case .conflict(var block) = parseResult.segments[blockIndex] else { return }
-        block.choice = (block.choice == choice) ? nil : choice
+        block.setChoice(block.choice == choice ? nil : choice)
+        parseResult.segments[blockIndex] = .conflict(block)
+    }
+
+    /// Toggle one line pick; clears any whole-block choice (line picks win).
+    func toggleLine(side: ConflictParser.ConflictBlock.Choice, index: Int, blockIndex: Int) {
+        guard parseResult.segments.indices.contains(blockIndex),
+              case .conflict(var block) = parseResult.segments[blockIndex] else { return }
+        block.choice = nil
+        switch side {
+        case .ours:
+            if block.selectedOurs.contains(index) { block.selectedOurs.remove(index) }
+            else { block.selectedOurs.insert(index) }
+        case .theirs:
+            if block.selectedTheirs.contains(index) { block.selectedTheirs.remove(index) }
+            else { block.selectedTheirs.insert(index) }
+        case .both:
+            break
+        }
         parseResult.segments[blockIndex] = .conflict(block)
     }
 

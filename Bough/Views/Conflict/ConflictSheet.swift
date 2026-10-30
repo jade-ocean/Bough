@@ -86,9 +86,12 @@ struct ConflictSheet: View {
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     case .conflict(let block):
-                        ConflictBlockView(block: block, blockIndex: index) { choice, idx in
+                        ConflictBlockView(block: block, blockIndex: index,
+                                          onChoose: { choice, idx in
                             conflict.setChoice(choice, blockIndex: idx)
-                        }
+                        }, onToggleLine: { side, lineIdx, idx in
+                            conflict.toggleLine(side: side, index: lineIdx, blockIndex: idx)
+                        })
                     }
                 }
             }
@@ -130,6 +133,7 @@ struct ConflictBlockView: View {
     let block: ConflictParser.ConflictBlock
     let blockIndex: Int
     let onChoose: (ConflictParser.ConflictBlock.Choice, Int) -> Void
+    let onToggleLine: (ConflictParser.ConflictBlock.Choice, Int, Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -140,10 +144,10 @@ struct ConflictBlockView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(block.choice == nil ? Color.orange.opacity(0.10) : Color.green.opacity(0.08)))
+                .fill(block.isResolved ? Color.green.opacity(0.08) : Color.orange.opacity(0.10)))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(block.choice == nil ? Color.orange.opacity(0.4) : Color.green.opacity(0.4)))
+                .strokeBorder(block.isResolved ? Color.green.opacity(0.4) : Color.orange.opacity(0.4)))
     }
 
     private var choiceHeader: some View {
@@ -180,9 +184,62 @@ struct ConflictBlockView: View {
 
     private var columnsRow: some View {
         HStack(alignment: .top, spacing: 8) {
-            sideColumn(title: "ours（当前分支）", lines: block.ours, highlight: showsOurs)
-            sideColumn(title: "theirs（合入方）", lines: block.theirs, highlight: showsTheirs)
+            lineColumn(title: "ours（当前分支）", lines: block.ours,
+                       picks: block.selectedOurs, side: .ours)
+            if !block.base.isEmpty {
+                baseColumn
+            }
+            lineColumn(title: "theirs（合入方）", lines: block.theirs,
+                       picks: block.selectedTheirs, side: .theirs)
         }
+    }
+
+    private var baseColumn: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("基线（diff3）")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            ForEach(Array(block.base.enumerated()), id: \.offset) { _, line in
+                Text(line)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(nsColor: .separatorColor).opacity(0.18))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func lineColumn(title: String, lines: [String],
+                            picks: Set<Int>,
+                            side: ConflictParser.ConflictBlock.Choice) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            ForEach(Array(lines.enumerated()), id: \.offset) { lineIndex, line in
+                let picked = picks.contains(lineIndex)
+                Button {
+                    onToggleLine(side, lineIndex, blockIndex)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: picked ? "checkmark.circle.fill" : "circle")
+                            .font(.caption2)
+                            .foregroundStyle(picked ? Color.green : Color.secondary.opacity(0.5))
+                        Text(line)
+                            .font(.system(size: 11, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .background(picked ? Color.green.opacity(0.16) : Color.clear)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var showsOurs: Bool { block.choice == .ours || block.choice == .both }
@@ -206,19 +263,5 @@ struct ConflictBlockView: View {
         }
     }
 
-    private func sideColumn(title: String, lines: [String], highlight: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
-                Text(line)
-                    .font(.system(size: 11, design: .monospaced))
-                    .padding(.horizontal, 4)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(highlight ? Color.green.opacity(0.10) : .clear)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+
 }
