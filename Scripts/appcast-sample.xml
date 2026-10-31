@@ -6,14 +6,14 @@
 		<description>Most recent Bough releases</description>
 		<language>en</language>
 		<item>
-			<title>Version 0.2.0</title>
+			<title>Version 0.3.0</title>
 			<pubDate>Mon, 30 Oct 2026 10:00:00 +0800</pubDate>
-			<sparkle:version>3</sparkle:version>
-			<sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+			<sparkle:version>4</sparkle:version>
+			<sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
 			<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-			<enclosure url="https://wangyuyang.dev/bough/Bough-0.2.0.dmg"
-				sparkle:edSignature="tuEvcQRYDrIhc0YEQyX9CuyEVWj+Gm74fQ9J8W5njhW1oi1HKRhORvO4Pp63Gi23u4Hu3PyyAD6r3TR7L6FdCA=="
-				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3556605" type="application/x-apple-diskimage"/>
+			<enclosure url="https://wangyuyang.dev/bough/Bough-0.3.0.dmg"
+				sparkle:edSignature="jYP4FZHuAoum+AHWJUTskc/BtiOje7A7KqETNsKtM+ux5r2XUXqHzRqHYLgns0Xwh8jOzf1MT/r9Yt27e8EvBw=="
+				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3717992" type="application/x-apple-diskimage"/>
 		</item>
 	</channel>
 </rss>
