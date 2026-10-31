@@ -7,6 +7,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Start the Sparkle updater at launch. Without touching the lazy
+        // singleton here it only initializes from the "检查更新…" menu item,
+        // so SUEnableAutomaticChecks never takes effect (BUG-004). The
+        // controller itself no-ops under XCUITest (UITEST_REPO_PATH guard).
+        _ = UpdaterController.shared
         Log.app.info("Bough launched")
     }
 

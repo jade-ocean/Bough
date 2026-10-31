@@ -85,9 +85,41 @@
 | 项 | 结果 | 证据/备注 |
 |---|---|---|
 | BUG-003 复查 | ✅ 关闭 | BoughUITests 2/2 过；原失败测试被所有者替换为渲染断言版，**完整提交流 UI 覆盖缺口已记录** |
-| F4-14 凭据日志泄漏（开仓路径） | Pass | 静态面：全部 15 处日志点均为定向 error/info/debug，**无 argv/URL 记录点**（executor 零日志）；运行时：假凭据远端（ghp_FAKE_TOKEN_QA_1234，无效主机）+ 开仓 15s 日志流/`log show` 双源捕获，token 零命中；派发生效经 store WAL mtime 确认。**范围限定**：remote 增删/fetch/push 路径仍待 UI 流覆盖 |
+| F4-14 凭据日志泄漏（开仓路径） | Pass | 静态面：全部 15 处日志通道为定向 error/info/debug，**无 argv/URL 记录点**（executor 零日志）；运行时：假凭据远端（占位 token + 无效主机）+ 开仓 15s 双源日志捕获，token 零命中；派发生效经 store WAL mtime 确认。**范围限定**：remote 增删/fetch/push 路径仍待 UI 流覆盖 |
 | F4-14 附带隐私观察 | INFO | 最近仓库明文路径存于 `~/Library/Application Support/default.store`（预期设计） |
-| Sparkle 链路（F9-02/03） | **Blocked** | dist 已有已签名 appcast+DMG（0.2.0，08:02）；但 Sparkle 工具链未安装（无 clone、无 sign_update/generate_appcast），Binaries/README 过时（placeholder 字样 vs 实际 SUPublicEDKey 在位）。端到端升级/防篡改测试需先 clone+make release Sparkle（≈15 分钟外部构建）——**待授权** |
+| Sparkle 链路（F9-02/03） | **Blocked** | dist 已有已签名 appcast+DMG（0.2.0，08:02）；工具链缺失 → 本轮已解除（见 09:15–09:50 段） |
 | 全量单测复查 | Pass | BoughTests.xctest 107/107；BoughUITests 2/2 |
+
+### Batch 1 追加二：Sparkle 升级链路实测（2026-10-31 09:15–09:50）
+
+**环境**：/tmp/Sparkle-build（浅克隆 + make release，工具在 /tmp/sparkle-lab/bin/）；0.1.1 测试基座（worktree /tmp/bough-011 @30447f3，SUFeedURL 指向本地 feed，Team 3LJQQ4T4DD）；本地 http feed（127.0.0.1:8765）；`default.store` 已备份至 /tmp/sparkle-lab/store-backup/。
+
+| 项 | 结果 | 证据/备注 |
+|---|---|---|
+| F9-03a 签名字节绑定 | **Pass** | 原始 DMG 签名 == dist appcast 签名（`tuEvcQRY…`，发布物绑定正确）；翻转 1 字节后签名完全不同（EdDSA 字节级绑定成立） |
+| **BUG-004**（新，产品级） | 🔴 **Fail 定案** | **自动更新从未在启动时接线**：`UpdaterController.shared` 为惰性单例，仅被「检查更新…」菜单处理器引用（BoughApp.swift:62-63）；0.1.1 更是零触发路径（无菜单项）。`SUEnableAutomaticChecks=true` 形同虚设。**端到端证实**：修复前 0.1.1 启动后 180s 零 feed 请求；harness 注入一行启动接线后立即出现 feed GET。**修复建议（一行）**：启动路径实例化 updater（如 AppDelegate `applicationDidFinishLaunching` 中 `_ = UpdaterController.shared`），已在一次性基座验证有效 |
+| F9-02 端到端自动升级 | **Blocked（BUG-004）→ harness 路部分验证** | 修复后 harness：Sparkle 随启动启动，09:28:48 成功 GET 本地 http feed（200，本地 http 被接受）；但下载/安装未在观察窗完成——检查调度有 ~75s 延迟 + 首查后 24h 间隔 + 本环境统一日志捕获不可靠（同一条目 process 谓词可见、subsystem 谓词缺失）三因素叠加，观察窗连续错过。**待所有者修复 BUG-004 后重跑**（工具链/feed/流程已全部就绪，见本段） |
+| F9-03 端到端（篡改拒绝） | Inconclusive | 依赖同一升级周期；密码学绑定半边已证（F9-03a）。端到端待 BUG-004 修复后重跑 |
+| F9-06 store 数据保留 | Inconclusive | 升级周期未完成；store 全程 integrity_check=ok，备份在案 |
+| 日志通道教训 | 流程 | Sparkle 日志 subsystem=`org.sparkle-project.Sparkle`（非宿主 bundle id）；`log show/stream` 默认级**不含** info/debug，必须 `--level debug`；本环境 subsystem 谓词与 process 谓词结果不一致——后续取证以 process 谓词 + `--level debug` 为准 |
+
+**环境遗留**：/tmp/sparkle-lab（feed/DMG/工具/备份）、/tmp/Sparkle-build、/tmp/bough-011（git worktree，含 harness 修复）、http server（8765 端口）——重启即清；git worktree 注册已随 cleanup 移除。
+
+### Batch 1 追加三：BUG-004 修复 + Sparkle 端到端三连（2026-10-31 09:52–10:05）
+
+**前置**：主工程 `AppDelegate.applicationDidFinishLaunching` 注入 `_ = UpdaterController.shared`（BUG-004 修复，注释说明根因与 UITEST 守卫兼容性）；全量回归 **114/114 通过**（112 单元/集成 + 2 UI）。
+
+| 项 | 结果 | 证据/备注 |
+|---|---|---|
+| **F9-02 端到端自动升级** | ✅ **Pass（30 秒完成）** | 0.1.1 测试基座（带修复）→ 本地 http feed（127.0.0.1:8765）→ 自动检查 → DMG 下载 → Autoupdate XPC 解包+验签 → **原地升级 0.1.1→0.2.0**；升级后 bundle `codesign --verify` 有效、SUFeedURL 恢复生产地址、全程 300s 轮询在 t=30s 命中。Sparkle 决策链完整可见（feed GET ×2 → DMG GET → Installer/Autoupdate 解包） |
+| **F9-03 端到端篡改拒绝** | ✅ **Pass（行为级）** | feed enclosure 指向翻转 1 字节的 DMG（保留原始签名）→ 下载 200 → **更新中止、版本保持 0.1.1**、应用正常运行。拒绝发生在 Installer XPC 内（报错为连接失效，与 EdDSA 验签失败在 Installer 内中止的行为一致；Installer 进程内精确日志未取到，归因注明）。密码学半边由 F9-03a 补全（原始==dist、篡改必异） |
+| **F9-06 升级数据保留** | ✅ **Pass（构造性+完整性）** | Sparkle 仅替换 bundle：升级周期前后 `default.store` integrity_check 均 ok；升级后 0.2.0 正常启动读同一 store |
+| BUG-004 状态 | ✅ 主工程已修 | 全量回归 114/114；Sparkle 端到端三连通过 → **发布门禁 D 组解锁** |
+| 观察项（非缺陷） | INFO | Sparkle 报 "bookmark data for update download is stale.. but still continuing"（非沙盒下的非致命警告，成功与拒绝两次运行均出现，不影响结果） |
+| 副作用声明 | INFO | 测试写入了共享 defaults 域的 `SULastCheckTime`（已随验证流程删除重置）；Sparkle 测试缓存已清理；feed 已还原为正确 enclosure |
+
+**结论**：BUG-004 修复 + 端到端三连通过后，**升级链路（F9-02/03/06）从「从未验证」变为「全绿」**。发布 Go/No-Go 清单 D 组（Sparkle 端到端、篡改拒绝、DMG 覆盖安装数据保留）现在有实证支撑。
+
+**环境遗留**：/tmp/sparkle-lab 保留（feed/DMG/工具/备份，供 BUG-004 正式出包后复跑）；/tmp/Sparkle-build 可删；http server 已停。
 
 
