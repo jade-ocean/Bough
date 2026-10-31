@@ -28,6 +28,13 @@ struct BoughApp: App {
             SettingsView()
         }
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("检查更新…") {
+                    UpdaterController.shared.checkForUpdates()
+                }
+            }
+        }
+        .commands {
             CommandGroup(after: .newItem) {
                 Button("打开仓库…") {
                     RepoOpenPanel.performMenuOpen()
@@ -58,10 +65,6 @@ struct BoughApp: App {
                     .keyboardShortcut("s", modifiers: [.command, .shift])
                 Button("Push") { WorkspaceCommand.send("push") }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
-                Divider()
-                Button("检查更新…") {
-                    UpdaterController.shared.checkForUpdates()
-                }
             }
         }
     }
