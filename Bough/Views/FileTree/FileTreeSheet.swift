@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Browse a commit's snapshot: outline tree on the left, file content on the
-/// right (syntax-highlighted text / image preview / binary notice).
+/// Browse a commit's snapshot with LAZY directory loading: top level via
+/// one `ls-tree` call, each folder expanded on demand (scales to huge repos).
 struct FileTreeSheet: View {
     @ObservedObject var model: WorkspaceModel
     let ref: String
@@ -9,6 +9,7 @@ struct FileTreeSheet: View {
     let onClose: () -> Void
 
     @State private var root: GitRepository.TreeNode?
+    @State private var expanded: Set<String> = []
     @State private var isLoading = true
     @State private var errorText: String?
     @State private var selectedFile: GitRepository.TreeNode?
@@ -60,14 +61,14 @@ struct FileTreeSheet: View {
         .padding(.vertical, 10)
     }
 
-    // MARK: - Tree pane
+    // MARK: - Tree pane (lazy)
 
     @ViewBuilder
     private var treePane: some View {
         if let root {
             List {
-                OutlineGroup(root.children ?? [], children: \.children) { node in
-                    row(node)
+                ForEach(root.children ?? []) { node in
+                    nodeRows(node)
                 }
             }
             .listStyle(.sidebar)
@@ -76,10 +77,58 @@ struct FileTreeSheet: View {
         }
     }
 
-    private func row(_ node: GitRepository.TreeNode) -> some View {
+    private func nodeRows(_ node: GitRepository.TreeNode) -> AnyView {
+        if node.isFile {
+            return AnyView(fileRow(node))
+        } else {
+            return AnyView(DisclosureGroup(isExpanded: expansionBinding(node)) {
+                if node.childrenLoaded {
+                    ForEach(node.children ?? []) { child in
+                        nodeRows(child)
+                    }
+                } else {
+                    HStack {
+                        ProgressView().controlSize(.mini)
+                        Text("加载中…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } label: {
+                folderLabel(node)
+            })
+        }
+    }
+
+    private func expansionBinding(_ node: GitRepository.TreeNode) -> Binding<Bool> {
+        Binding(get: { expanded.contains(node.path) },
+                set: { wants in
+                    if wants {
+                        expanded.insert(node.path)
+                        if node.childrenLoaded == false {
+                            Task { await loadChildren(node) }
+                        }
+                    } else {
+                        expanded.remove(node.path)
+                    }
+                })
+    }
+
+    private func folderLabel(_ node: GitRepository.TreeNode) -> some View {
         HStack(spacing: 5) {
-            Image(systemName: node.isFile ? "doc" : "folder")
-                .foregroundStyle(node.isFile ? Color.secondary : Color.accentColor)
+            Image(systemName: "folder")
+                .foregroundStyle(Color.accentColor)
+                .font(.caption)
+            Text(node.name)
+                .lineLimit(1)
+        }
+        .contentShape(Rectangle())
+    }
+
+    private func fileRow(_ node: GitRepository.TreeNode) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: "doc")
+                .foregroundStyle(Color.secondary)
                 .font(.caption)
             Text(node.name)
                 .lineLimit(1)
@@ -92,7 +141,13 @@ struct FileTreeSheet: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if node.isFile { Task { await loadFile(node) } }
+            Task { await loadFile(node) }
+        }
+        .contextMenu {
+            Button("复制路径") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(node.path, forType: .string)
+            }
         }
     }
 
@@ -131,7 +186,7 @@ struct FileTreeSheet: View {
         } else {
             EmptyStateView(icon: "doc.text.magnifyingglass",
                            title: "选择文件",
-                           message: "左侧树中点击文件查看内容（可折叠文件夹）")
+                           message: "左侧树中点击文件查看内容（目录展开时按需加载）")
         }
     }
 
@@ -171,10 +226,20 @@ struct FileTreeSheet: View {
         isLoading = true
         defer { isLoading = false }
         do {
-            root = try await model.repository.fileTree(ref: ref)
+            root = try await model.repository.treeDir(ref: ref, prefix: "")
             errorText = nil
         } catch {
             errorText = error.localizedDescription
+        }
+    }
+
+    private func loadChildren(_ node: GitRepository.TreeNode) async {
+        do {
+            let loaded = try await model.repository.treeDir(ref: ref, prefix: node.path)
+            root = GitTreeParser.updateChildren(of: node.path, in: root ?? loaded,
+                                                with: loaded)
+        } catch {
+            model.banner = .error(error.localizedDescription)
         }
     }
 

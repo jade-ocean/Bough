@@ -205,10 +205,20 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
       AX 状态回弹）不可靠，stage/commit 端到端由 100+ 单元/集成测试覆盖
 - [x] 附带修复：blame fixture 39 位 sha、ls-tree 对齐空格解析、buildTree 值语义
 
-- [ ] blame 视图（选中文件 → 逐行作者/提交，`git blame --porcelain` 解析）
-- [ ] 文件树浏览（任意提交的工作树快照浏览 + 文件内容查看）
-- [ ] XCUITest 冒烟（打开仓库 → stage → 提交 → 切分支 → diff 关键路径自动化）（`build/dist/`：DMG + appcast.xml + UPLOAD.md 托管说明），
-      待确定托管地址后改 SUFeedURL 重出包
+### 0.5 迭代（联动 + 懒加载）
+
+- [x] **Blame↔历史联动**：blame 行内短 SHA 可点击（下划线提示），点击即
+      切换到历史视图并在详情选中该提交（`commitBody` 拉取元数据；
+      无效 SHA 走错误横幅）。历史列表行可见时同步高亮（不滚动定位）
+- [x] **文件树懒加载**：文件树 Sheet 改为按需加载——首次只拉顶层
+      （`git ls-tree -l <ref>`），目录展开时逐层加载（`-- <prefix>/`），
+      路径寻址的不可变更新拼接子层（`GitTreeParser.updateChildren`）；
+      `TreeNode.childrenLoaded` 区分「未加载 / 已加载空目录」；超大仓库
+      打开文件树不再全量递归
+- [x] 已知波动：全量并行测试偶发 suite 间 flake（git 进程风暴下个别
+      命令失败），单独/复跑均绿——后续给集成测试加无效化重试或关并行
+
+## 应用图标
 
 ## 应用图标
 

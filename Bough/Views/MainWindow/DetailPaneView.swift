@@ -46,6 +46,9 @@ struct DetailPaneView: View {
                             blame: model.detail.blame,
                             onToggleBlame: {
                                 Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                            },
+                            onOpenCommit: { sha in
+                                Task { await model.openCommit(sha: sha) }
                             })
         }
     }
@@ -70,6 +73,9 @@ struct DetailPaneView: View {
                             blame: model.detail.blame,
                             onToggleBlame: {
                                 Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                            },
+                            onOpenCommit: { sha in
+                                Task { await model.openCommit(sha: sha) }
                             })
         }
     }

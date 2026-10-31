@@ -102,6 +102,25 @@ final class BlameTests: XCTestCase {
         XCTAssertTrue(commits.contains { $0.summary == "c2" && $0.author == "Alice" })
     }
 
+    @MainActor
+    func testOpenCommitJumpsToHistorySelection() async throws {
+        let repo = try await makeRepo()
+        let model = WorkspaceModel(repository: repo)
+        let commits = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        let c1 = try XCTUnwrap(commits.first { $0.subject == "c1" })
+
+        await model.openCommit(sha: c1.sha)
+        XCTAssertEqual(model.centerMode, .history) // switched from any mode
+        guard case .commit(let selected) = model.detail.selection else {
+            return XCTFail("详情应选中该提交")
+        }
+        XCTAssertEqual(selected.sha, c1.sha)
+
+        // Unknown sha -> banner, selection unchanged.
+        await model.openCommit(sha: String(repeating: "f", count: 40))
+        XCTAssertNotNil(model.banner)
+    }
+
     func testBlameAtRefIgnoresWorktree() async throws {
         let repo = try await makeRepo()
         try "worktree only\n".write(to: repo.root.appendingPathComponent("f.txt"),

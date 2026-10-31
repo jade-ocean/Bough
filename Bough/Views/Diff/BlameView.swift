@@ -5,6 +5,8 @@ struct BlameView: View {
     let blame: BlameResult
     let fileName: String
     let truncated: Bool
+    /// Present = short SHA is clickable and jumps to the commit in history.
+    var onOpenCommit: ((String) -> Void)? = nil
 
     var body: some View {
         let tracker = HighlightTracker(language: SyntaxLanguage.detect(fileName: fileName))
@@ -33,8 +35,20 @@ struct BlameView: View {
                      format: .dateTime.year().month().day())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text(String(entry.sha.prefix(7)))
-                    .foregroundStyle(.tertiary)
+                if let onOpenCommit {
+                    Button {
+                        onOpenCommit(entry.sha)
+                    } label: {
+                        Text(String(entry.sha.prefix(7)))
+                            .foregroundStyle(.tint)
+                            .underline()
+                    }
+                    .buttonStyle(.plain)
+                    .help("在历史中查看此提交")
+                } else {
+                    Text(String(entry.sha.prefix(7)))
+                        .foregroundStyle(.tertiary)
+                }
             }
             .font(.system(size: 10, design: .monospaced))
             .frame(width: 230, alignment: .leading)

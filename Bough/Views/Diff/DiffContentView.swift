@@ -15,6 +15,7 @@ struct DiffContentView: View {
     var showsBlame = false
     var blame: BlameResult? = nil
     var onToggleBlame: (() -> Void)? = nil
+    var onOpenCommit: ((String) -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -103,7 +104,8 @@ struct DiffContentView: View {
         } else if let blame {
             BlameView(blame: blame,
                       fileName: rendered.fileChange?.path ?? "",
-                      truncated: rendered.truncated)
+                      truncated: rendered.truncated,
+                      onOpenCommit: onOpenCommit)
         } else if let diff = rendered.diff {
             DiffTextView(file: diff,
                          fileName: rendered.fileChange?.path ?? "",

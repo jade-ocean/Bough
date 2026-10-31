@@ -263,6 +263,24 @@ final class WorkspaceModel: ObservableObject {
         await mutate { try await $0.removeRemote(name: remote.name) }
     }
 
+    // MARK: - Blame -> history navigation
+
+    /// Jump from a blame line to its authoring commit: switch to history
+    /// mode and select the commit (right pane shows its detail). The history
+    /// list highlights the row when visible; scrolling-to is not attempted.
+    func openCommit(sha: String) async {
+        do {
+            guard let commit = try await repository.commitBody(sha: sha) else {
+                banner = .error("未找到提交：\(sha.prefix(7))")
+                return
+            }
+            centerMode = .history
+            detail.select(.commit(commit))
+        } catch {
+            banner = .error(error.localizedDescription)
+        }
+    }
+
     // MARK: - Reflog recovery (working-copy pack)
 
     func checkoutDetached(_ entry: ReflogEntry) async {

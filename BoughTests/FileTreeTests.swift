@@ -67,6 +67,31 @@ final class FileTreeTests: XCTestCase {
         return try GitRepository(root: dir, gitBinary: gitBinary)
     }
 
+    func testLazyTreeDirTopLevelAndNested() async throws {
+        let repo = try await makeRepo()
+        // Top level: one folder + one file, folder NOT loaded yet.
+        let root = try await repo.treeDir(ref: "HEAD", prefix: "")
+        XCTAssertEqual(root.children?.map(\.name), ["src", "README.md"])
+        let src = root.children?.first { $0.name == "src" }
+        XCTAssertEqual(src?.kind, .folder)
+        XCTAssertEqual(src?.childrenLoaded, false)
+        XCTAssertNil(src?.children)
+
+        // Load the folder on demand.
+        let level = try await repo.treeDir(ref: "HEAD", prefix: "src")
+        XCTAssertEqual(level.children?.map(\.name), ["a.swift"])
+        XCTAssertEqual(level.children?.first?.childrenLoaded, true)
+        XCTAssertEqual(level.children?.first?.size, Int("let x = 1\n".utf8.count))
+
+        // Path-addressed update splices children into the root copy.
+        let updated = GitTreeParser.updateChildren(of: "src", in: root, with: level)
+        let updatedSrc = updated.children?.first { $0.name == "src" }
+        XCTAssertEqual(updatedSrc?.childrenLoaded, true)
+        XCTAssertEqual(updatedSrc?.children?.first?.path, "src/a.swift")
+        // Original root untouched (value semantics).
+        XCTAssertEqual(root.children?.first { $0.name == "src" }?.childrenLoaded, false)
+    }
+
     func testListTreeAndBlobContentAtRef() async throws {
         let repo = try await makeRepo()
         let items = try await repo.listTree(ref: "HEAD")
