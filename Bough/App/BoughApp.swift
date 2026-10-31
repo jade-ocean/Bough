@@ -68,6 +68,16 @@ struct BoughApp: App {
 
     private static func makeStore() -> RecentRepositoriesStore {
         do {
+            #if DEBUG
+            // XCUITest runs must never pollute the real recents store -
+            // tests share this app binary, so give them an in-memory one.
+            if ProcessInfo.processInfo.environment["UITEST_REPO_PATH"] != nil {
+                let config = ModelConfiguration(isStoredInMemoryOnly: true)
+                let container = try ModelContainer(for: RepositoryRecord.self,
+                                                   configurations: config)
+                return RecentRepositoriesStore(modelContainer: container)
+            }
+            #endif
             let container = try ModelContainer(for: RepositoryRecord.self)
             return RecentRepositoriesStore(modelContainer: container)
         } catch {
