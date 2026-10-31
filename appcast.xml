@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+	<channel>
+		<title>Bough</title>
+		<link>https://wangyuyang.dev/bough/appcast.xml</link>
+		<description>Most recent Bough releases</description>
+		<language>en</language>
+		<item>
+			<title>Version 0.3.1</title>
+			<pubDate>Mon, 30 Oct 2026 10:00:00 +0800</pubDate>
+			<sparkle:version>5</sparkle:version>
+			<sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
+			<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+			<enclosure url="https://wangyuyang.dev/bough/Bough-0.3.1.dmg"
+				sparkle:edSignature="cXoL4kR5if5IY0eMfYkJjB2IsTtz2Bc7EZCDpCTeE6rrKNkM1aCPr+wcyeC6kk3jvM4jycJPoACMj8JKC3XgCQ=="
+				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3717320" type="application/x-apple-diskimage"/>
+		</item>
+	</channel>
+</rss>
