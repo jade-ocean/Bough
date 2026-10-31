@@ -69,8 +69,10 @@ struct DiffContentView: View {
                 .font(.callout)
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(-1) // shrink first - keeps controls intact
                 .help(rendered?.fileChange?.displayPath ?? "")
-            Spacer()
+            Spacer(minLength: 8)
             if let hunkActionTitle, let onHunkAction {
                 Button(hunkActionTitle) { onHunkAction() }
                     .controlSize(.small)
@@ -84,7 +86,8 @@ struct DiffContentView: View {
                 Text("并排").tag(true)
             }
             .pickerStyle(.segmented)
-            .frame(width: 120)
+            .labelsHidden()
+            .fixedSize()
             .disabled(rendered?.diff == nil || showsBlame)
         }
         .padding(.horizontal, 12)

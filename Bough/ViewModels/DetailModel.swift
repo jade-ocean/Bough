@@ -37,6 +37,11 @@ final class DetailModel: ObservableObject {
     weak var parentWorkspace: WorkspaceModel?
     /// File to auto-select once a commit's changed-files list loads.
     private var pendingFilePath: String?
+    /// Monotonic token: every select/selectFile bumps it; async loads may only
+    /// publish results of the LATEST generation (fast consecutive clicks
+    /// otherwise let stale tasks overwrite newer selections).
+    private var generation = 0
+    @Published private(set) var isLoadingDetail = false
 
     /// Detail header info when a commit is selected.
     @Published private(set) var headerCommit: Commit?
@@ -51,6 +56,7 @@ final class DetailModel: ObservableObject {
 
     func select(_ selection: Selection?) {
         guard selection != self.selection else { return }
+        generation += 1
         self.selection = selection
         selectedFile = nil
         files = []
@@ -59,14 +65,24 @@ final class DetailModel: ObservableObject {
         selectedHunks = []
         showsBlame = false
         blame = nil
-        Task { await load() }
+        Task { await load(generation: generation) }
     }
 
-    private func load() async {
+    private func load(generation gen: Int) async {
+        isLoadingDetail = true
+        defer { if gen == self.generation { isLoadingDetail = false } }
         switch selection {
         case .commit(let commit):
-            headerCommit = (try? await repository.commitBody(sha: commit.sha)) ?? commit
-            files = (try? await repository.changedFiles(sha: commit.sha)) ?? []
+            Log.git.info("detail load enter gen=\(gen) sha=\(commit.sha.prefix(7), privacy: .public)")
+            async let headerFetch = repository.commitBody(sha: commit.sha)
+            async let filesFetch = repository.changedFiles(sha: commit.sha)
+            let header = try? await headerFetch
+            let loadedFiles = (try? await filesFetch) ?? []
+            Log.git.info("detail load fetched gen=\(gen) latest=\(gen == self.generation) files=\(loadedFiles.count)")
+            guard gen == generation else { return }
+            headerCommit = header ?? commit
+            files = loadedFiles
+            Log.git.info("detail load published gen=\(gen)")
             let preferred = pendingFilePath.flatMap { path in
                 files.first { $0.path == path }
             }
@@ -74,7 +90,7 @@ final class DetailModel: ObservableObject {
             if let preferred {
                 selectFile(preferred)
             } else if files.isEmpty {
-                rendered = nil
+                if gen == generation { rendered = nil }
             } else if selectedFile == nil {
                 selectFile(files[0])
             }
@@ -82,12 +98,13 @@ final class DetailModel: ObservableObject {
             let kind: FileChange.Kind = isUntracked ? .untracked
                 : (staged ? .modified : .modified)
             let change = FileChange(path: path, originalPath: nil, kind: kind, isBinary: false)
+            guard gen == generation else { return }
             files = [change]
             selectFile(change)
         case .stash(let entry):
-            // selectFile routes into renderFile, which renders the stash patch.
             let change = FileChange(path: entry.selector, originalPath: nil,
                                     kind: .modified, isBinary: false)
+            guard gen == generation else { return }
             files = [change]
             selectFile(change)
         case nil:
@@ -99,9 +116,13 @@ final class DetailModel: ObservableObject {
 
     /// Select a file inside the commit (or the single worktree file) and render its diff.
     func selectFile(_ file: FileChange) {
+        // Same file already rendered -> nothing to do (avoids re-parse churn).
+        if selectedFile == file, rendered?.fileChange == file { return }
+        generation += 1
         selectedFile = file
         selectedHunks = []
-        Task { await renderFile(file) }
+        rendered = nil // clear stale diff immediately (real loading feedback)
+        Task { await renderFile(file, generation: generation) }
     }
 
     /// Select a commit, optionally pre-picking one of its changed files.
@@ -109,6 +130,8 @@ final class DetailModel: ObservableObject {
         pendingFilePath = filePath
         select(.commit(commit))
     }
+    // (pendingFilePath survives the generation bump by design: it is read
+    // inside load of the new generation.)
 
     /// Toggle blame mode; loads/refreshes blame for the current file.
     func setBlame(_ enabled: Bool) async {
@@ -131,22 +154,32 @@ final class DetailModel: ObservableObject {
         }
     }
 
-    private func renderFile(_ file: FileChange) async {
+    private func renderFile(_ file: FileChange, generation gen: Int) async {
+        defer {
+            if gen == generation { isLoadingDetail = false }
+            Log.git.info("detail render done gen=\(gen) latest=\(gen == self.generation)")
+        }
         switch selection {
         case .commit(let commit):
-            guard let diffData = try? await repository.fileDiff(sha: commit.sha, path: file.path) else {
+            let diffData = try? await repository.fileDiff(sha: commit.sha, path: file.path)
+            guard gen == generation else { return }
+            guard let diffData else {
                 rendered = RenderedDiff(fileChange: file, diff: nil, oldImage: nil, newImage: nil, truncated: false)
                 return
             }
-            await render(data: diffData, file: file, commitSha: commit.sha)
+            await render(data: diffData, file: file, commitSha: commit.sha, generation: gen)
         case .worktreeFile(let path, let staged, let isUntracked):
-            guard let diffData = try? await repository.worktreeDiff(path: path, staged: staged, isUntracked: isUntracked) else {
+            let diffData = try? await repository.worktreeDiff(path: path, staged: staged, isUntracked: isUntracked)
+            guard gen == generation else { return }
+            guard let diffData else {
                 rendered = RenderedDiff(fileChange: file, diff: nil, oldImage: nil, newImage: nil, truncated: false)
                 return
             }
-            await render(data: diffData, file: file, commitSha: nil)
+            await render(data: diffData, file: file, commitSha: nil, generation: gen)
         case .stash(let entry):
-            guard let diffData = try? await repository.stashShow(entry.selector) else {
+            let diffData = try? await repository.stashShow(entry.selector)
+            guard gen == generation else { return }
+            guard let diffData else {
                 rendered = nil
                 return
             }
@@ -154,39 +187,44 @@ final class DetailModel: ObservableObject {
                                        originalPath: nil,
                                        kind: .modified,
                                        isBinary: false)
-            await render(data: diffData, file: stashFile, commitSha: nil)
+            await render(data: diffData, file: stashFile, commitSha: nil, generation: gen)
         case nil:
             break
         }
     }
 
-    private func render(data: Data, file: FileChange, commitSha: String?) async {
+    private func render(data: Data, file: FileChange, commitSha: String?, generation gen: Int) async {
         let text = String(decoding: data, as: UTF8.self)
-        var parsed = DiffParser.parse(text).first
-        var truncated = false
-        // Cap rendered lines for pathological diffs.
-        if var file = parsed, file.hunks.count > 0 {
-            var kept: [DiffHunk] = []
-            var budget = lineCap
-            for var hunk in file.hunks {
-                guard budget > 0 else { truncated = true; break }
-                if hunk.lines.count > budget {
-                    hunk = DiffHunk(oldStart: hunk.oldStart, oldCount: hunk.oldCount,
-                                    newStart: hunk.newStart, newCount: hunk.newCount,
-                                    section: hunk.section,
-                                    lines: Array(hunk.lines.prefix(budget)))
-                    truncated = true
+        // Parsing + line-cap run OFF the main actor: large diffs froze the UI here.
+        let (parsed, truncated) = await Task.detached(priority: .userInitiated) {
+            var parsed = DiffParser.parse(text).first
+            var truncated = false
+            if var file = parsed, !file.hunks.isEmpty {
+                var kept: [DiffHunk] = []
+                var budget = 5000
+                for var hunk in file.hunks {
+                    guard budget > 0 else { truncated = true; break }
+                    if hunk.lines.count > budget {
+                        hunk = DiffHunk(oldStart: hunk.oldStart, oldCount: hunk.oldCount,
+                                        newStart: hunk.newStart, newCount: hunk.newCount,
+                                        section: hunk.section,
+                                        lines: Array(hunk.lines.prefix(budget)))
+                        truncated = true
+                    }
+                    budget -= hunk.lines.count
+                    kept.append(hunk)
+                    if truncated { break }
                 }
-                budget -= hunk.lines.count
-                kept.append(hunk)
-                if truncated { break }
+                parsed = DiffFile(hunks: kept, isBinary: file.isBinary, path: file.path)
             }
-            parsed = DiffFile(hunks: kept, isBinary: file.isBinary, path: file.path)
-        }
+            return (parsed, truncated)
+        }.value
+        guard gen == generation else { return }
         // Image preview: binary + known extension -> load both versions.
         if let parsed, parsed.isBinary, file.isImage, let sha = commitSha {
             let oldData = try? await repository.blobContent(ref: "\(sha)^", path: file.path)
             let newData = try? await repository.blobContent(ref: sha, path: path(for: file))
+            guard gen == generation else { return }
             rendered = RenderedDiff(fileChange: file,
                                     diff: parsed,
                                     oldImage: oldData.flatMap { NSImage(data: $0) },
@@ -195,6 +233,7 @@ final class DetailModel: ObservableObject {
                                     rawDiffText: text)
             return
         }
+        guard gen == generation else { return }
         rendered = RenderedDiff(fileChange: file, diff: parsed,
                                 oldImage: nil, newImage: nil, truncated: truncated,
                                 rawDiffText: text)
@@ -211,8 +250,9 @@ final class DetailModel: ObservableObject {
         do {
             try await repository.applyPatch(Data(patch.utf8), reverse: !stage)
             selectedHunks = []
+            generation += 1
             await parentWorkspace?.refresh()
-            await load()
+            await load(generation: generation)
         } catch {
             parentWorkspace?.banner = .error(error.localizedDescription)
             Log.git.error("hunk apply failed: \(String(describing: error), privacy: .public)")

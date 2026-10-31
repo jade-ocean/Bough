@@ -7,6 +7,7 @@ struct HistoryRowView: View {
     let graphWidth: CGFloat
     let decorations: [RefDecoration]
     let isHead: Bool
+    var isSelected = false
 
     static let rowHeight: CGFloat = 30
 
@@ -41,6 +42,9 @@ struct HistoryRowView: View {
             }
         }
         .frame(height: Self.rowHeight)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
     }
 }
 

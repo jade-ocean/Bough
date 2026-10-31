@@ -76,7 +76,10 @@ struct HistoryView: View {
             if pathFilterActive {
                 TextField("路径前缀，如 src/", text: $history.filter.path)
                     .textFieldStyle(.roundedBorder)
-                    .frame(width: 150)
+                    .frame(width: 200)
+                    .onSubmit {
+                        history.filter = history.filter // trigger reload via didSet
+                    }
             }
             Button {
                 pathFilterActive.toggle()
@@ -103,6 +106,7 @@ struct HistoryView: View {
                 HistoryRowView(row: row, showsGraph: showsGraph, graphWidth: graphWidth,
                                decorations: history.decorations(for: row.commit.sha),
                                isHead: history.headSha == row.commit.sha)
+                    .tag(row.commit) // List(selection:) requires tags to fire the binding
                     .contextMenu {
                         contextMenu(for: row.commit)
                     }

@@ -4,10 +4,19 @@ import SwiftUI
 /// working-copy file diff.
 struct DetailPaneView: View {
     @ObservedObject var model: WorkspaceModel
+    /// Nested ObservableObject: changes to detail state (headerCommit/files/
+    /// rendered) only notify THIS observer - observing the parent alone made
+    /// the right pane go stale until an unrelated parent change re-rendered it.
+    @ObservedObject private var detail: DetailModel
+
+    init(model: WorkspaceModel) {
+        self.model = model
+        self._detail = ObservedObject(wrappedValue: model.detail)
+    }
 
     var body: some View {
         Group {
-            switch model.detail.selection {
+            switch detail.selection {
             case .commit:
                 commitDetail
             case .worktreeFile:
@@ -15,7 +24,7 @@ struct DetailPaneView: View {
             case .stash(let entry):
                 VStack(spacing: 0) {
                     stashHeader(entry)
-                    DiffContentView(rendered: model.detail.rendered,
+                    DiffContentView(rendered: detail.rendered,
                                     showsSideBySide: sideBySideBinding,
                                     isLoading: false)
                 }
@@ -32,20 +41,20 @@ struct DetailPaneView: View {
 
     private var commitDetail: some View {
         VStack(spacing: 0) {
-            CommitHeaderView(commit: model.detail.headerCommit)
-            if model.detail.files.count > 1 {
-                FileChangeListView(files: model.detail.files,
-                                   selected: model.detail.selectedFile) { file in
+            CommitHeaderView(commit: detail.headerCommit)
+            if detail.files.count > 1 {
+                FileChangeListView(files: detail.files,
+                                   selected: detail.selectedFile) { file in
                     model.detail.selectFile(file)
                 }
             }
-            DiffContentView(rendered: model.detail.rendered,
+            DiffContentView(rendered: detail.rendered,
                             showsSideBySide: sideBySideBinding,
-                            isLoading: false,
-                            showsBlame: model.detail.showsBlame,
-                            blame: model.detail.blame,
+                            isLoading: detail.isLoadingDetail,
+                            showsBlame: detail.showsBlame,
+                            blame: detail.blame,
                             onToggleBlame: {
-                                Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                                Task { await model.detail.setBlame(!detail.showsBlame) }
                             },
                             onOpenCommit: { sha in
                                 Task { await model.openCommit(sha: sha) }
@@ -55,24 +64,24 @@ struct DetailPaneView: View {
 
     private var worktreeDetail: some View {
         VStack(spacing: 0) {
-            if let file = model.detail.selectedFile {
+            if let file = detail.selectedFile {
                 worktreeHeader(file)
             }
-            DiffContentView(rendered: model.detail.rendered,
+            DiffContentView(rendered: detail.rendered,
                             showsSideBySide: sideBySideBinding,
-                            isLoading: false,
+                            isLoading: detail.isLoadingDetail,
                             hunkActionTitle: hunkActionTitle,
-                            hunkActionEnabled: !model.detail.selectedHunks.isEmpty,
+                            hunkActionEnabled: !detail.selectedHunks.isEmpty,
                             onHunkAction: {
                                 Task { await model.detail.applySelectedHunks(stage: hunkActionStages) }
                             },
                             hunkSelection: Binding(
-                                get: { model.detail.selectedHunks },
-                                set: { model.detail.selectedHunks = $0 }),
-                            showsBlame: model.detail.showsBlame,
-                            blame: model.detail.blame,
+                                get: { detail.selectedHunks },
+                                set: { detail.selectedHunks = $0 }),
+                            showsBlame: detail.showsBlame,
+                            blame: detail.blame,
                             onToggleBlame: {
-                                Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                                Task { await model.detail.setBlame(!detail.showsBlame) }
                             },
                             onOpenCommit: { sha in
                                 Task { await model.openCommit(sha: sha) }
@@ -82,14 +91,14 @@ struct DetailPaneView: View {
 
     /// nil = hunk actions hidden (not a worktree diff).
     private var hunkActionTitle: String? {
-        guard case .worktreeFile(_, let staged, _) = model.detail.selection else { return nil }
-        let count = model.detail.selectedHunks.count
+        guard case .worktreeFile(_, let staged, _) = detail.selection else { return nil }
+        let count = detail.selectedHunks.count
         let verb = staged ? "从暂存区撤销所选 Hunk（\(count)）" : "暂存所选 Hunk（\(count)）"
         return count == 0 ? (staged ? "从暂存区撤销所选 Hunk" : "暂存所选 Hunk") : verb
     }
 
     private var hunkActionStages: Bool {
-        guard case .worktreeFile(_, let staged, _) = model.detail.selection else { return true }
+        guard case .worktreeFile(_, let staged, _) = detail.selection else { return true }
         return !staged
     }
 
@@ -175,6 +184,7 @@ struct CommitHeaderView: View {
                         Image(systemName: "doc.on.doc")
                     }
                     .buttonStyle(.borderless)
+                    .accessibilityIdentifier("detail.copySha")
                     .help("复制完整 SHA")
                     if commit.parents.count > 1 {
                         Label("合并提交", systemImage: "arrow.triangle.merge")

@@ -83,12 +83,14 @@ extension GitRepository {
 
     /// Files changed by a commit (name-status merged with numstat for binary flags).
     func changedFiles(sha: String) async throws -> [FileChange] {
-        let statusResult = try await runOrThrow([
+        async let statusFetch = runOrThrow([
             "diff-tree", "--no-commit-id", "--name-status", "--root", "-r", "-M", sha,
         ], serial: false)
-        let numstatResult = try await run([
+        async let numstatFetch = run([
             "diff-tree", "--no-commit-id", "--numstat", "--root", "-r", "-M", sha,
         ], serial: false)
+        let statusResult = try await statusFetch
+        let numstatResult = try await numstatFetch
         let binaryPaths = Self.binaryPaths(from: numstatResult.stdoutText)
         var changes: [FileChange] = []
         for line in statusResult.stdoutText.split(separator: "\n") {
