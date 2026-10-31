@@ -6,6 +6,16 @@
 		<description>Most recent Bough releases</description>
 		<language>en</language>
 		<item>
+			<title>Version 0.4.1</title>
+			<pubDate>Mon, 30 Oct 2026 10:00:00 +0800</pubDate>
+			<sparkle:version>7</sparkle:version>
+			<sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
+			<sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+			<enclosure url="https://jade-ocean.github.io/Bough/Bough-0.4.1.dmg"
+				sparkle:edSignature="js6ol7hLarqz5RTWODzVEy9PqjkewhCUh8iDnblsE6xohPIDfttfP+eNGJqGacvs/dJzPXQPJXt7UA+JaX1UCQ=="
+				sparkle:os="macos" sparkle:edSignatureKey="ed25519" length="3718164" type="application/x-apple-diskimage"/>
+		</item>
+		<item>
 			<title>Version 0.4.0</title>
 			<pubDate>Mon, 30 Oct 2026 10:00:00 +0800</pubDate>
 			<sparkle:version>6</sparkle:version>
