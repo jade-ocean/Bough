@@ -75,6 +75,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      parallelizable: false
+      randomOrder: false
       targets:
         - BoughTests
         - BoughUITests

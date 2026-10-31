@@ -8,17 +8,70 @@ struct BlameView: View {
     /// Present = short SHA is clickable and jumps to the commit in history.
     var onOpenCommit: ((String) -> Void)? = nil
 
+    /// Row under the mouse -> bottom preview strip (popovers flicker).
+    @State private var hoveredSha: String?
+
     var body: some View {
         let tracker = HighlightTracker(language: SyntaxLanguage.detect(fileName: fileName))
-        ScrollView([.vertical, .horizontal]) {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(blame.entries.enumerated()), id: \.offset) { index, entry in
-                    row(entry, tracker: tracker, seed: index)
+        VStack(spacing: 0) {
+            ScrollView([.vertical, .horizontal]) {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(blame.entries.enumerated()), id: \.offset) { index, entry in
+                        row(entry, tracker: tracker, seed: index)
+                            .onHover { hovering in
+                                if hovering { hoveredSha = entry.sha }
+                            }
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .textSelection(.enabled)
+            if let sha = hoveredSha, let commit = blame.commits[sha] {
+                previewStrip(commit)
+            }
         }
+    }
+
+    /// Hover preview: commit metadata without any extra git call.
+    private func previewStrip(_ commit: BlameCommit) -> some View {
+        HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(Self.color(for: commit.sha))
+                .frame(width: 4, height: 14)
+            Text(commit.author)
+                .font(.callout.weight(.medium))
+            Text(Date(timeIntervalSince1970: TimeInterval(commit.timestamp)),
+                 format: .dateTime.year().month().day().hour().minute())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(commit.sha)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(.tertiary)
+                .textSelection(.enabled)
+            if commit.isBoundary {
+                Text("历史边界")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+            Text(commit.summary)
+                .font(.callout)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+            if let onOpenCommit {
+                Button {
+                    onOpenCommit(commit.sha)
+                } label: {
+                    Label("打开此提交", systemImage: "arrow.right.circle")
+                }
+                .controlSize(.small)
+                .help("在历史视图中查看该提交详情")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 
     private func row(_ entry: BlameEntry, tracker: HighlightTracker, seed: Int) -> some View {

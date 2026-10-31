@@ -35,6 +35,8 @@ final class DetailModel: ObservableObject {
     @Published private(set) var blame: BlameResult?
     /// Weak back-reference for status refresh after partial staging.
     weak var parentWorkspace: WorkspaceModel?
+    /// File to auto-select once a commit's changed-files list loads.
+    private var pendingFilePath: String?
 
     /// Detail header info when a commit is selected.
     @Published private(set) var headerCommit: Commit?
@@ -65,7 +67,13 @@ final class DetailModel: ObservableObject {
         case .commit(let commit):
             headerCommit = (try? await repository.commitBody(sha: commit.sha)) ?? commit
             files = (try? await repository.changedFiles(sha: commit.sha)) ?? []
-            if files.isEmpty {
+            let preferred = pendingFilePath.flatMap { path in
+                files.first { $0.path == path }
+            }
+            pendingFilePath = nil
+            if let preferred {
+                selectFile(preferred)
+            } else if files.isEmpty {
                 rendered = nil
             } else if selectedFile == nil {
                 selectFile(files[0])
@@ -94,6 +102,12 @@ final class DetailModel: ObservableObject {
         selectedFile = file
         selectedHunks = []
         Task { await renderFile(file) }
+    }
+
+    /// Select a commit, optionally pre-picking one of its changed files.
+    func select(commit: Commit, filePath: String?) {
+        pendingFilePath = filePath
+        select(.commit(commit))
     }
 
     /// Toggle blame mode; loads/refreshes blame for the current file.

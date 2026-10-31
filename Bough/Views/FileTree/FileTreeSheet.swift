@@ -148,6 +148,10 @@ struct FileTreeSheet: View {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(node.path, forType: .string)
             }
+            Button("在历史中打开该文件") {
+                onClose()
+                Task { await model.openCommit(sha: ref, fileName: node.path) }
+            }
         }
     }
 
@@ -223,10 +227,18 @@ struct FileTreeSheet: View {
     // MARK: - Loading
 
     private func load() async {
+        // Cache hit: instant reopen, zero git calls.
+        if let cached = model.fileTreeCache.cachedRoot(ref: ref) {
+            root = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         defer { isLoading = false }
         do {
-            root = try await model.repository.treeDir(ref: ref, prefix: "")
+            let fetched = try await model.repository.treeDir(ref: ref, prefix: "")
+            model.fileTreeCache.storeRoot(ref: ref, fetched)
+            root = fetched
             errorText = nil
         } catch {
             errorText = error.localizedDescription
@@ -234,8 +246,15 @@ struct FileTreeSheet: View {
     }
 
     private func loadChildren(_ node: GitRepository.TreeNode) async {
+        // Serve from cache when the folder was loaded before.
+        if let cached = model.fileTreeCache.cachedChildren(ref: ref, prefix: node.path) {
+            root = GitTreeParser.updateChildren(of: node.path, in: root ?? cached,
+                                                with: cached)
+            return
+        }
         do {
             let loaded = try await model.repository.treeDir(ref: ref, prefix: node.path)
+            model.fileTreeCache.storeChildren(ref: ref, prefix: node.path, loaded)
             root = GitTreeParser.updateChildren(of: node.path, in: root ?? loaded,
                                                 with: loaded)
         } catch {

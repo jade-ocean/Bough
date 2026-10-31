@@ -121,6 +121,25 @@ final class BlameTests: XCTestCase {
         XCTAssertNotNil(model.banner)
     }
 
+    @MainActor
+    func testOpenCommitWithFileNameSelectsFile() async throws {
+        let repo = try await makeRepo()
+        let model = WorkspaceModel(repository: repo)
+        let commits = try await repo.commits(filter: HistoryFilter(allBranches: false))
+        let c2 = try XCTUnwrap(commits.first { $0.subject == "c2" })
+
+        await model.openCommit(sha: c2.sha, fileName: "f.txt")
+        guard case .commit = model.detail.selection else {
+            return XCTFail("详情应选中该提交")
+        }
+        // Changed-files load is async inside the model; wait for the file.
+        for _ in 0..<20 {
+            if model.detail.selectedFile?.path == "f.txt" { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        XCTAssertEqual(model.detail.selectedFile?.path, "f.txt")
+    }
+
     func testBlameAtRefIgnoresWorktree() async throws {
         let repo = try await makeRepo()
         try "worktree only\n".write(to: repo.root.appendingPathComponent("f.txt"),

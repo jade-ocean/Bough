@@ -218,6 +218,30 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
 - [x] 已知波动：全量并行测试偶发 suite 间 flake（git 进程风暴下个别
       命令失败），单独/复跑均绿——后续给集成测试加无效化重试或关并行
 
+### 0.6 迭代（稳定 + 联动增强）
+
+- [x] **测试并行 flake 根治**：scheme 关闭并行测试（git 进程密集的集成测试
+      串行 16s 全量，稳定 0 失败；此前并行下偶发 suite 间命令失败）
+- [x] **Blame hover 预览**：鼠标悬停行时底部预览条显示该提交完整元数据
+      （作者 / 精确时间 / 全长 SHA 可选中 / summary / 历史边界标记），
+      零额外 git 调用（数据来自 porcelain 解析结果）；popover 方案因
+      hover 闪烁弃用
+- [x] **文件树 → 历史跳转**：文件右键「在历史中打开该文件」——关闭文件树、
+      切换历史视图、选中该提交并**自动选中该文件的 diff**（DetailModel
+      `pendingFilePath` 在 changed-files 加载后按路径择取）
+
+### 0.7 迭代（预览条跳转 + 目录缓存）
+
+- [x] **QA 资产入库**：`Scripts/qa/`（冒烟脚本 + 数据工厂）与 `docs/qa/`
+      （测试计划增量 + 执行记录）纳入版本管理
+- [x] **Blame 预览条「打开此提交」**：hover 预览条尾部新增按钮，与既有
+      SHA 点击跳转共用 `openCommit` 通道——预览看完一键进历史详情
+- [x] **文件树缓存跨 Sheet 复用**：`FileTreeCache`（每仓库实例，挂在
+      WorkspaceModel）按 ref 缓存顶层树与各目录层级，重复打开/展开
+      **零 git 调用**；任何仓库变更（commit/checkout/reset…）后整体失效
+      重建（符号 ref 的树随变更走，绝不读旧快照）
+- [x] 缓存单测：root 往返、per-ref+prefix 隔离、占位节点拼接语义
+
 ## 应用图标
 
 ## 应用图标

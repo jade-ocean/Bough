@@ -72,11 +72,13 @@
 		9256663B3680189426D6CF30 /* BlameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECB9D6832EA8BEEBE228253 /* BlameView.swift */; };
 		94B88B7EE794CBA9C4CE063E /* DiffEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA52CF745F166A343A090C8E /* DiffEngineTests.swift */; };
 		97F8C39E5C2F3889C700AD60 /* DirectPathAccessProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EAF2D36614116582F8779E /* DirectPathAccessProvider.swift */; };
+		9D838F77AE5BD22996B0F49C /* FileTreeCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C50D024F69A3AEF4D112A5B1 /* FileTreeCacheTests.swift */; };
 		A14E73A11235B03D0E709A9A /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63A659E4B1ECB383568891F /* Preferences.swift */; };
 		A224FC62D5FC18CC1B27E153 /* BoughApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3890C9AA0917A3D9D47BA612 /* BoughApp.swift */; };
 		A52E004AF917308AB9DCAFCF /* GitHistoryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B5A44289A4C2C3E731F3C2 /* GitHistoryIntegrationTests.swift */; };
 		A6B930D506990EB9F9ADEDE9 /* StashTagModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB387918713DDE346471E54 /* StashTagModels.swift */; };
 		AC2F8F3807667CC6BBFD68E6 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9ABA4917915CC203D566C63 /* AppDelegate.swift */; };
+		AFEB9C75FA982C7CFF02C17E /* FileTreeCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EE131D1C2806D3BD28772D /* FileTreeCache.swift */; };
 		B26D441201B167811845E090 /* PendingOpenRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5131343F50F987BEAC3D49B /* PendingOpenRouter.swift */; };
 		B49E6EE5B3E35E9FB610D8B6 /* DiffContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E707C64B5AA3D738D50962E1 /* DiffContentView.swift */; };
 		B6F231F4A65955554EC0ADAC /* ConflictModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD21F72E3412247F700AF6E4 /* ConflictModel.swift */; };
@@ -170,6 +172,7 @@
 		5D7E44613B6C58562AB4CA9B /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		61FE8E8A2BEFA8C6385E1FCD /* ConflictSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictSheet.swift; sourceTree = "<group>"; };
 		64D995D060FA2F79F78E7D59 /* GitCloneIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitCloneIntegrationTests.swift; sourceTree = "<group>"; };
+		67EE131D1C2806D3BD28772D /* FileTreeCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTreeCache.swift; sourceTree = "<group>"; };
 		6820EA5B35040F547B339C74 /* MultiRepoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiRepoView.swift; sourceTree = "<group>"; };
 		6B783AB497290A75C0515343 /* MultiRepoBatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiRepoBatch.swift; sourceTree = "<group>"; };
 		6C76DD20510A382189E1268D /* RepositoryLocatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryLocatorTests.swift; sourceTree = "<group>"; };
@@ -216,6 +219,7 @@
 		BBDB6B4B9215F6A6E86F3758 /* Bough.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bough.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C033B0CE009FA5F27768B824 /* GitRepository+FileTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitRepository+FileTree.swift"; sourceTree = "<group>"; };
 		C37D5F29DE671CB3661F234B /* BranchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchModel.swift; sourceTree = "<group>"; };
+		C50D024F69A3AEF4D112A5B1 /* FileTreeCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTreeCacheTests.swift; sourceTree = "<group>"; };
 		C63A659E4B1ECB383568891F /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		C7331772F2292C0D0593641B /* WindowAccessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowAccessor.swift; sourceTree = "<group>"; };
 		C73A038730D146E38E4F69E5 /* FileTreeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTreeSheet.swift; sourceTree = "<group>"; };
@@ -350,6 +354,7 @@
 				03F06DAB7D45BBBD80430E5C /* BoughURLSchemeTests.swift */,
 				DA6CC226819995BCB3E9A126 /* ConflictParserTests.swift */,
 				BA52CF745F166A343A090C8E /* DiffEngineTests.swift */,
+				C50D024F69A3AEF4D112A5B1 /* FileTreeCacheTests.swift */,
 				773B5D4FB6CC57B1C219C3BD /* FileTreeTests.swift */,
 				3C58C45378762E287B625E8B /* GitBranchIntegrationTests.swift */,
 				64D995D060FA2F79F78E7D59 /* GitCloneIntegrationTests.swift */,
@@ -593,6 +598,7 @@
 				C37D5F29DE671CB3661F234B /* BranchModel.swift */,
 				AD21F72E3412247F700AF6E4 /* ConflictModel.swift */,
 				1AA8D7BE0EF5F989B2583156 /* DetailModel.swift */,
+				67EE131D1C2806D3BD28772D /* FileTreeCache.swift */,
 				F3C9C7A90324EF98A75D3FC0 /* HistoryModel.swift */,
 				0970DA866AF5C55374D6038F /* MainWindowModel.swift */,
 				00FFEA24F2038FB7B2F0DD29 /* MultiRepoModel.swift */,
@@ -755,6 +761,7 @@
 				50CDA8042191E91CEB9C1D2E /* BoughURLSchemeTests.swift in Sources */,
 				2C950E8C44642DAB2A5022C1 /* ConflictParserTests.swift in Sources */,
 				94B88B7EE794CBA9C4CE063E /* DiffEngineTests.swift in Sources */,
+				9D838F77AE5BD22996B0F49C /* FileTreeCacheTests.swift in Sources */,
 				FB444F347BF3487CB756CFE1 /* FileTreeTests.swift in Sources */,
 				2B87797897E89CF685061E3F /* GitBranchIntegrationTests.swift in Sources */,
 				81FC6D73AFCBD3120B16BB6D /* GitCloneIntegrationTests.swift in Sources */,
@@ -812,6 +819,7 @@
 				13E523DAF6CB54C6B4072CFE /* DiscardConfirmation.swift in Sources */,
 				08BC1C92542806DCDF9FA0C5 /* EmptyStateView.swift in Sources */,
 				FE7298030333C3A5E4000C17 /* FileChange.swift in Sources */,
+				AFEB9C75FA982C7CFF02C17E /* FileTreeCache.swift in Sources */,
 				8BAF4E266A89E6E7F2CDB8A3 /* FileTreeSheet.swift in Sources */,
 				35B8B589B894593EB84310EF /* GitCommand.swift in Sources */,
 				DF9747FBC33941F2728658B4 /* GitCommandExecutor.swift in Sources */,

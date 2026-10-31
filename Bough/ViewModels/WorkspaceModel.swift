@@ -28,6 +28,8 @@ final class WorkspaceModel: ObservableObject {
     let tags: TagModel
     let conflict: ConflictModel
     let search: SearchModel
+    /// Lazy file-tree cache shared across FileTreeSheet presentations.
+    let fileTreeCache = FileTreeCache()
 
     /// Center column mode: history graph or working copy.
     enum CenterMode: String {
@@ -268,14 +270,14 @@ final class WorkspaceModel: ObservableObject {
     /// Jump from a blame line to its authoring commit: switch to history
     /// mode and select the commit (right pane shows its detail). The history
     /// list highlights the row when visible; scrolling-to is not attempted.
-    func openCommit(sha: String) async {
+    func openCommit(sha: String, fileName: String? = nil) async {
         do {
             guard let commit = try await repository.commitBody(sha: sha) else {
                 banner = .error("未找到提交：\(sha.prefix(7))")
                 return
             }
             centerMode = .history
-            detail.select(.commit(commit))
+            detail.select(commit: commit, filePath: fileName)
         } catch {
             banner = .error(error.localizedDescription)
         }
@@ -364,6 +366,8 @@ final class WorkspaceModel: ObservableObject {
             banner = .error(error.localizedDescription)
             Log.git.error("mutation failed: \(String(describing: error), privacy: .public)")
         }
+        // Trees may have changed (commit/reset/checkout...) - drop the cache.
+        fileTreeCache.clear()
         await refresh()
         async let branchesReload: Void = branches.reload()
         async let stashReload: Void = stash.reload()
