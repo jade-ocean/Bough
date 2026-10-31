@@ -2,7 +2,7 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
 	<channel>
 		<title>Bough</title>
-		<link>https://wangyuyang.dev/bough/appcast.xml</link>
+		<link>https://jade-ocean.github.io/Bough/</link>
 		<description>Most recent Bough releases</description>
 		<language>en</language>
 		<item>
