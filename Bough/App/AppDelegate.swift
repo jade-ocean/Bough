@@ -19,8 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        Log.ui.info("appkit reopen, visible windows: \(flag)")
-        if !flag { Self.reopenHandler?() }
+        // Restore is handled in applicationDidBecomeActive ONLY - firing both
+        // produced two windows on Dock click (0.4.2 regression).
         return true
     }
 
@@ -32,7 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if !hasMainWindow {
             Log.ui.info("activation without main window - reopening")
-            Self.reopenHandler?()
+            // Defer out of the activation call stack: a synchronous
+            // openWindow here gets swallowed until the NEXT activation.
+            DispatchQueue.main.async { Self.reopenHandler?() }
         }
     }
 }
