@@ -1,6 +1,9 @@
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Set once by the root view (captures OpenWindowAction, which stays
+    /// valid after its window closes) so Dock reopen can restore a window.
+    static var reopenHandler: (() -> Void)?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         Log.app.info("Bough launching")
@@ -15,13 +18,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Log.app.info("Bough launched")
     }
 
-    /// Quit when the last window closes (matches utility-app convention).
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        Log.ui.info("appkit reopen, visible windows: \(flag)")
+        if !flag { Self.reopenHandler?() }
+        return true
     }
 
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        Log.ui.info("dock reopen, visible windows: \(flag)")
-        return true
+    /// SwiftUI swallows applicationShouldHandleReopen - restore on activation
+    /// ourselves when no main window is visible.
+    func applicationDidBecomeActive(_ notification: Notification) {
+        let hasMainWindow = NSApp.windows.contains {
+            $0.isVisible && $0.identifier?.rawValue.hasPrefix("main") == true
+        }
+        if !hasMainWindow {
+            Log.ui.info("activation without main window - reopening")
+            Self.reopenHandler?()
+        }
     }
 }

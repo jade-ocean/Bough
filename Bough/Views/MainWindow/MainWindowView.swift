@@ -31,6 +31,10 @@ struct MainWindowView: View {
         .onReceive(NotificationCenter.default.publisher(for: .boughOpenMultiRepo)) { _ in
             openWindow(id: "multi-repo")
         }
+        .onAppear {
+            // Capture once; OpenWindowAction stays usable after window close.
+            AppDelegate.reopenHandler = { openWindow(id: "main") }
+        }
         .sheet(item: $viewModel.pendingSheet) { sheet in
             if let ws = viewModel.workspace {
                 switch sheet {

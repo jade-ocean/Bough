@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "enabledPlugins": {
+      "android-emulator@zcode-plugins-official": false,
+      "ios-simulator@zcode-plugins-official": false,
+      "libtv-cli@zcode-plugins-official": false,
+      "blender@zcode-plugins-official": false,
+      "unity@zcode-plugins-official": false,
+      "godot@zcode-plugins-official": false,
+      "unreal-engine@zcode-plugins-official": false
+    }
+  }
+}

@@ -33,6 +33,19 @@ struct BoughApp: App {
                     UpdaterController.shared.checkForUpdates()
                 }
             }
+            // Replace the system Help menu (no Help Book installed -> the
+            // default item pops "未找到帮助") with working entries.
+            CommandGroup(replacing: .help) {
+                Button("Bough 主页") {
+                    NSWorkspace.shared.open(URL(string: "https://jade-ocean.github.io/Bough/")!)
+                }
+                Button("在 GitHub 上查看源码") {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/jade-ocean/Bough")!)
+                }
+                Button("反馈问题") {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/jade-ocean/Bough/issues")!)
+                }
+            }
         }
         .commands {
             CommandGroup(after: .newItem) {
