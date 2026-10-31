@@ -64,6 +64,17 @@
                ReferencedContainer = "container:Bough.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "4D285F638009163284559AF4"
+               BuildableName = "BoughUITests.xctest"
+               BlueprintName = "BoughUITests"
+               ReferencedContainer = "container:Bough.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

@@ -30,6 +30,9 @@ final class DetailModel: ObservableObject {
     @Published var showsSideBySide = false
     /// Hunk checkboxes in worktree diff mode (indices into DiffFile.hunks).
     @Published var selectedHunks: Set<Int> = []
+    /// Blame mode for the selected file (worktree: HEAD; commit: at that ref).
+    @Published var showsBlame = false
+    @Published private(set) var blame: BlameResult?
     /// Weak back-reference for status refresh after partial staging.
     weak var parentWorkspace: WorkspaceModel?
 
@@ -52,6 +55,8 @@ final class DetailModel: ObservableObject {
         rendered = nil
         headerCommit = nil
         selectedHunks = []
+        showsBlame = false
+        blame = nil
         Task { await load() }
     }
 
@@ -89,6 +94,27 @@ final class DetailModel: ObservableObject {
         selectedFile = file
         selectedHunks = []
         Task { await renderFile(file) }
+    }
+
+    /// Toggle blame mode; loads/refreshes blame for the current file.
+    func setBlame(_ enabled: Bool) async {
+        showsBlame = enabled
+        guard enabled else { return }
+        do {
+            switch selection {
+            case .worktreeFile(let path, _, let isUntracked):
+                guard !isUntracked else { blame = nil; return }
+                blame = try await repository.blame(path: path)
+            case .commit(let commit):
+                guard let file = selectedFile else { blame = nil; return }
+                blame = try await repository.blame(path: file.path, ref: commit.sha)
+            case nil, .stash:
+                blame = nil
+            }
+        } catch {
+            blame = nil
+            parentWorkspace?.banner = .error(error.localizedDescription)
+        }
     }
 
     private func renderFile(_ file: FileChange) async {

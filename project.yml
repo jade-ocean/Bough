@@ -51,6 +51,19 @@ targets:
         PRODUCT_NAME: "$(TARGET_NAME)"
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Bough.app/Contents/MacOS/Bough"
         BUNDLE_LOADER: "$(TEST_HOST)"
+  BoughUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: BoughUITests
+    dependencies:
+      - target: Bough
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_NAME: "$(TARGET_NAME)"
+        TEST_TARGET_NAME: Bough
+        CODE_SIGN_ENTITLEMENTS: BoughUITests/UITests.entitlements
 
 schemes:
   Bough:
@@ -64,3 +77,4 @@ schemes:
       config: Debug
       targets:
         - BoughTests
+        - BoughUITests

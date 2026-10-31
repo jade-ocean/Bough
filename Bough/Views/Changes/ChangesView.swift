@@ -129,9 +129,14 @@ struct ChangesView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             Picker("视图", selection: $model.centerMode) {
-                Label("历史", systemImage: "clock.arrow.circlepath").tag(WorkspaceModel.CenterMode.history)
-                Label("工作区", systemImage: "folder").tag(WorkspaceModel.CenterMode.changes)
+                Label("历史", systemImage: "clock.arrow.circlepath")
+                    .tag(WorkspaceModel.CenterMode.history)
+                    .accessibilityIdentifier("mode.history")
+                Label("工作区", systemImage: "folder")
+                    .tag(WorkspaceModel.CenterMode.changes)
+                    .accessibilityIdentifier("mode.changes")
             }
+            .accessibilityIdentifier("center.mode")
             .pickerStyle(.segmented)
             .frame(width: 150)
             branchChip

@@ -105,9 +105,15 @@ struct GitRepository: Sendable {
     /// Internal so extensions can read repo config (SSL settings etc.).
     func configValue(_ key: String) async throws -> String? {
         // Exit code 1 = key unset (not an error for our purposes).
-        guard let result = try? await run(["config", "--get", key], serial: false) else { return nil }
-        let value = result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return value.isEmpty ? nil : value
+        do {
+            let result = try await run(["config", "--get", key], serial: false)
+            let value = result.stdoutText.trimmingCharacters(in: .whitespacesAndNewlines)
+            Log.git.debug("config \(key, privacy: .public) -> exit \(result.exitCode) value=\(value.isEmpty ? "<empty>" : value, privacy: .public) binary=\(self.gitBinaryPath, privacy: .public)")
+            return value.isEmpty ? nil : value
+        } catch {
+            Log.git.error("config \(key, privacy: .public) threw: \(String(describing: error), privacy: .public)")
+            return nil
+        }
     }
 
     // MARK: - Staging

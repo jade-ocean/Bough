@@ -11,6 +11,10 @@ struct DiffContentView: View {
     var hunkActionEnabled: Bool = false
     var onHunkAction: (() -> Void)? = nil
     var hunkSelection: Binding<Set<Int>>? = nil
+    // Blame mode (text files with history only).
+    var showsBlame = false
+    var blame: BlameResult? = nil
+    var onToggleBlame: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +37,31 @@ struct DiffContentView: View {
         .background(Color(nsColor: .textBackgroundColor))
     }
 
+    @ViewBuilder
+    private var blameToggleButton: some View {
+        if showsBlame {
+            Button {
+                onToggleBlame?()
+            } label: {
+                Image(systemName: "text.justify.leading")
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .help("退出 Blame")
+        } else {
+            Button {
+                onToggleBlame?()
+            } label: {
+                Image(systemName: "text.justify.leading")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(rendered?.newImage != nil || rendered?.oldImage != nil
+                      || rendered?.fileChange?.isImage == true)
+            .help("逐行 Blame（作者 / 日期 / 提交）")
+        }
+    }
+
     private var modeBar: some View {
         HStack(spacing: 8) {
             Text(rendered?.fileChange?.displayPath ?? "未选择文件")
@@ -46,13 +75,16 @@ struct DiffContentView: View {
                     .controlSize(.small)
                     .disabled(!hunkActionEnabled)
             }
+            if let onToggleBlame {
+                blameToggleButton
+            }
             Picker("模式", selection: $showsSideBySide) {
                 Text("内联").tag(false)
                 Text("并排").tag(true)
             }
             .pickerStyle(.segmented)
             .frame(width: 120)
-            .disabled(rendered?.diff == nil)
+            .disabled(rendered?.diff == nil || showsBlame)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -68,6 +100,10 @@ struct DiffContentView: View {
             ImageDiffView(oldImage: nil, newImage: image)
         } else if rendered.diff?.isBinary == true {
             binaryNotice
+        } else if let blame {
+            BlameView(blame: blame,
+                      fileName: rendered.fileChange?.path ?? "",
+                      truncated: rendered.truncated)
         } else if let diff = rendered.diff {
             DiffTextView(file: diff,
                          fileName: rendered.fileChange?.path ?? "",

@@ -12,6 +12,7 @@ struct HistoryView: View {
     @State private var tagTarget: Commit?
     @State private var rebaseTarget: Commit?
     @State private var showsReflog = false
+    @State private var treeTarget: Commit?
 
     init(model: WorkspaceModel) {
         self.model = model
@@ -44,6 +45,11 @@ struct HistoryView: View {
         }
         .sheet(isPresented: $showsReflog) {
             ReflogSheet(model: model) { showsReflog = false }
+        }
+        .sheet(item: $treeTarget) { commit in
+            FileTreeSheet(model: model, ref: commit.sha, title: commit.subject) {
+                treeTarget = nil
+            }
         }
     }
 
@@ -159,6 +165,9 @@ struct HistoryView: View {
             Task { await model.revert(commit) }
         }
         Divider()
+        Button("浏览此提交的文件树…") {
+            treeTarget = commit
+        }
         Button("在此提交上打标签…") {
             tagTarget = commit
         }
@@ -192,9 +201,14 @@ struct HistoryView: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
             Picker("视图", selection: $model.centerMode) {
-                Label("历史", systemImage: "clock.arrow.circlepath").tag(WorkspaceModel.CenterMode.history)
-                Label("工作区", systemImage: "folder").tag(WorkspaceModel.CenterMode.changes)
+                Label("历史", systemImage: "clock.arrow.circlepath")
+                    .tag(WorkspaceModel.CenterMode.history)
+                    .accessibilityIdentifier("mode.history")
+                Label("工作区", systemImage: "folder")
+                    .tag(WorkspaceModel.CenterMode.changes)
+                    .accessibilityIdentifier("mode.changes")
             }
+            .accessibilityIdentifier("center.mode")
             .pickerStyle(.segmented)
             .frame(width: 150)
             Toggle("图形", isOn: $showsGraph)

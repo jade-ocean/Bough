@@ -87,6 +87,13 @@ struct MainWindowView: View {
     }
 
     private func consumePendingOpen() async {
+        #if DEBUG
+        // XCUITest hook: launchEnvironment["UITEST_REPO_PATH"] auto-opens a repo.
+        if let path = ProcessInfo.processInfo.environment["UITEST_REPO_PATH"], !path.isEmpty {
+            await viewModel.openRepository(at: .init(fileURLWithPath: path))
+            return
+        }
+        #endif
         if let path = PendingOpenRouter.shared.take() {
             await viewModel.openRepository(at: .init(fileURLWithPath: path))
         }

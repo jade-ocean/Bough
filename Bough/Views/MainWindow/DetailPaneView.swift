@@ -41,7 +41,12 @@ struct DetailPaneView: View {
             }
             DiffContentView(rendered: model.detail.rendered,
                             showsSideBySide: sideBySideBinding,
-                            isLoading: false)
+                            isLoading: false,
+                            showsBlame: model.detail.showsBlame,
+                            blame: model.detail.blame,
+                            onToggleBlame: {
+                                Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                            })
         }
     }
 
@@ -60,7 +65,12 @@ struct DetailPaneView: View {
                             },
                             hunkSelection: Binding(
                                 get: { model.detail.selectedHunks },
-                                set: { model.detail.selectedHunks = $0 }))
+                                set: { model.detail.selectedHunks = $0 }),
+                            showsBlame: model.detail.showsBlame,
+                            blame: model.detail.blame,
+                            onToggleBlame: {
+                                Task { await model.detail.setBlame(!model.detail.showsBlame) }
+                            })
         }
     }
 

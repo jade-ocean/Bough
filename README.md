@@ -192,7 +192,18 @@ TEAM_ID=... NOTARIZE=0 ./Scripts/release.sh          # 本地试跑（跳过公�
       待确定托管地址后改 SUFeedURL 重出包
 - [ ] 真分层 Liquid Glass 图标：三图层 SVG 已就绪（`build/icon-layers/`），待 Icon Composer 手工组装
 
-### 下一迭代候选（reword 已于体验包交付，划掉）
+### 0.4 迭代（blame / 文件树 / XCUITest 冒烟）
+
+- [x] **Blame 视图**：diff 模式栏按钮切换逐行作者/日期/SHA（sha 稳定配色），
+      工作区文件按 HEAD、提交文件按该提交 blame（`git blame --porcelain --root -w`）
+- [x] **文件树浏览**：历史右键「浏览此提交的文件树…」→ OutlineGroup 树 + 内容查看
+      （语法高亮 / 图片预览 / 二进制识别 / 另存为），`git ls-tree -r -l` 构建层级
+- [x] **XCUITest 冒烟**：BoughUITests target（runner 关沙盒跑 git seed）；
+      启动钩子 `UITEST_REPO_PATH` / `UITEST_VIEW`（DEBUG 限定），UI 测试自动跳过
+      Sparkle。覆盖：开仓→历史渲染、工作区三面板+脏文件行+批量操作、欢迎页。
+      已知限制：XCUITest 驱动 SwiftUI Button/TextEditor 交互（按钮 action 不递送、
+      AX 状态回弹）不可靠，stage/commit 端到端由 100+ 单元/集成测试覆盖
+- [x] 附带修复：blame fixture 39 位 sha、ls-tree 对齐空格解析、buildTree 值语义
 
 - [ ] blame 视图（选中文件 → 逐行作者/提交，`git blame --porcelain` 解析）
 - [ ] 文件树浏览（任意提交的工作树快照浏览 + 文件内容查看）

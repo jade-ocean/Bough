@@ -48,6 +48,12 @@ final class WorkspaceModel: ObservableObject {
         self.conflict = ConflictModel(repository: repository, accessProvider: accessProvider)
         self.search = SearchModel(repository: repository)
         detail.parentWorkspace = self
+        #if DEBUG
+        // XCUITest hook: boot straight into the working-copy view.
+        if ProcessInfo.processInfo.environment["UITEST_VIEW"] == "changes" {
+            centerMode = .changes
+        }
+        #endif
     }
 
     var canCommit: Bool {

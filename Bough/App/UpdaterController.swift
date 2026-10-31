@@ -9,6 +9,14 @@ final class UpdaterController {
     private let controller: SPUStandardUpdaterController?
 
     private init() {
+        #if DEBUG
+        // XCUITest runs must not spawn the updater (its sheet would mask the
+        // whole window and network probing slows the run).
+        if ProcessInfo.processInfo.environment["UITEST_REPO_PATH"] != nil {
+            controller = nil
+            return
+        }
+        #endif
         // startingUpdater can fail when Sparkle misconfigured; degrade gracefully.
         var updater: SPUStandardUpdaterController?
         do {

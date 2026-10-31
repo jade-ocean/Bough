@@ -37,7 +37,7 @@ final class HighlightTracker {
         return result
     }
 
-    private static func color(for kind: TokenKind) -> Color {
+    static func color(for kind: TokenKind) -> Color {
         switch kind {
         case .plain: return .primary
         case .keyword: return .purple
