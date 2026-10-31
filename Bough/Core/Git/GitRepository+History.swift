@@ -79,6 +79,16 @@ extension GitRepository {
 
 extension GitRepository {
 
+    /// Commits that touched a file, newest-first (`--follow` tracks renames).
+    func fileHistory(path: String, ref: String = "HEAD", limit: Int = 300) async throws -> [Commit] {
+        let result = try await runOrThrow([
+            "log", "--follow", "--topo-order", "-n", String(limit),
+            "--pretty=format:%H%x1f%h%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%s%x1e",
+            ref, "--", path,
+        ], serial: false)
+        return GitLogParser.parseHistory(result.stdoutText)
+    }
+
     // MARK: - Diff
 
     /// Files changed by a commit (name-status merged with numstat for binary flags).

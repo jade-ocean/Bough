@@ -96,6 +96,18 @@ final class GitHistoryIntegrationTests: XCTestCase {
         XCTAssertTrue(untracked.contains("+++"))
     }
 
+    func testFileHistoryFollowsCommits() async throws {
+        let repo = try await makeRepo()
+        // one.txt touched by c1 only; add c3 touching one.txt again.
+        let setup = GitCommandExecutor(gitBinary: gitBinary, workingDirectory: repo.root)
+        try "one-v2\n".write(to: repo.root.appendingPathComponent("one.txt"), atomically: true, encoding: .utf8)
+        let add = try await setup.run(GitCommand(["add", "."]))
+        guard add.succeeded else { throw GitError.executionFailed(command: "add", exitCode: 1, stderr: add.stderr) }
+        _ = try await repo.commit(message: "c3 one")
+        let history = try await repo.fileHistory(path: "one.txt")
+        XCTAssertEqual(history.map(\.subject), ["c3 one", "c1"])
+    }
+
     func testBlobContentAtRef() async throws {
         let repo = try await makeRepo()
         let head = try await repo.headSha()

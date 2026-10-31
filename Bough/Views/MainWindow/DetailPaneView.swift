@@ -8,6 +8,7 @@ struct DetailPaneView: View {
     /// rendered) only notify THIS observer - observing the parent alone made
     /// the right pane go stale until an unrelated parent change re-rendered it.
     @ObservedObject private var detail: DetailModel
+    @State private var fileHistoryTarget: FileHistoryTarget?
 
     init(model: WorkspaceModel) {
         self.model = model
@@ -33,6 +34,11 @@ struct DetailPaneView: View {
                     icon: "doc.text.magnifyingglass",
                     title: "变更详情",
                     message: "选择左侧提交或工作区文件查看 diff")
+            }
+        }
+        .sheet(item: $fileHistoryTarget) { target in
+            FileHistorySheet(model: model, target: target) {
+                fileHistoryTarget = nil
             }
         }
     }
@@ -206,6 +212,7 @@ struct CommitHeaderView: View {
 struct FileChangeListView: View {
     let files: [FileChange]
     let selected: FileChange?
+    var onFileHistory: ((FileChange) -> Void)? = nil
     let onSelect: (FileChange) -> Void
 
     var body: some View {
@@ -230,6 +237,11 @@ struct FileChangeListView: View {
                     }
                 }
                 .tag(file.path)
+                .contextMenu {
+                    if let onFileHistory {
+                        Button("查看文件历史") { onFileHistory(file) }
+                    }
+                }
             }
         }
         .listStyle(.sidebar)
